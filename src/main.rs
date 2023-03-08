@@ -10,7 +10,12 @@ use std::ffi::CString;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+use winit::event_loop::EventLoop;
+
+
 fn main() {
+
+    let event_loop = EventLoop::new();
 
     // Binding the CString to a variable to avoid it being deallocating it, which
     // would have been the case if we just assigned it to a pointer with .as_ptr()
