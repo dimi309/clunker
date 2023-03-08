@@ -4,6 +4,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+#![allow(unused_assignments)]
+
 use std::ffi::CString;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -21,16 +23,18 @@ fn main() {
     // Null pointer
     const exts: *mut *const std::os::raw::c_char = std::ptr::null_mut();
 
+    let mut res: i32 = 0;
+
     unsafe {
 
         // Using the vulkan helper
-        let ret = vh_create_instance(namep, exts, 0);
-
-        if ret > 0 {
-            println!("Vulkan worked!")
-        }
+        res = vh_create_instance(namep, exts, 0);
 
         vh_shutdown();
+    }
+
+    if res > 0 {
+        println!("Vulkan worked!")
     }
 
 }
