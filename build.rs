@@ -5,7 +5,9 @@ use std::path::PathBuf;
 
 fn main() {
 
-    let vulkan_sdk = env::var("VULKAN_SDK").expect("vulkan sdk environment variable not found");
+    // env::var runs at runtime
+    // env! runs at compile time
+    let vulkan_sdk = env!("VULKAN_SDK");
 
     println!("cargo:rustc-link-search=lib");
     println!("cargo:rustc-link-search={}{}", vulkan_sdk, r#"\Lib"#);
