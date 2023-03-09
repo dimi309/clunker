@@ -10,12 +10,15 @@ use std::ffi::CString;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use winit::event_loop::EventLoop;
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::EventLoop,
+    window::WindowBuilder,
+};
+
 
 
 fn main() {
-
-    let event_loop = EventLoop::new();
 
     // Binding the CString to a variable to avoid it being deallocating it, which
     // would have been the case if we just assigned it to a pointer with .as_ptr()
@@ -41,5 +44,31 @@ fn main() {
     if res > 0 {
         println!("Vulkan worked!")
     }
+
+    let event_loop = EventLoop::new();
+    let window = WindowBuilder::new().build(&event_loop).unwrap();
+
+    event_loop.run(move |event, _, control_flow| {
+        control_flow.set_poll(); // vs .set_wait 
+
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+        } => {
+            println!("Close requested");
+            control_flow.set_exit();
+        },
+        Event::MainEventsCleared => {
+            window.request_redraw();
+        },
+        Event::RedrawRequested(_) => {
+
+        },
+        _ => ()
+    }
+
+    });
+    
 
 }
