@@ -48,7 +48,6 @@ fn main() {
     });
 }
 
-#[derive(Clone, Debug)]
 struct App {
     nameStr: CString,
 }
