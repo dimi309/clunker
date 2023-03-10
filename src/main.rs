@@ -1,9 +1,7 @@
-
 // Don't crazy with warnings about all the stuff imported from C
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-
 #![allow(unused_assignments)]
 
 use std::ffi::CString;
@@ -11,64 +9,71 @@ use std::ffi::CString;
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use winit::{
+    dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::WindowBuilder,
+    window::{Window, WindowBuilder},
 };
 
-
-
 fn main() {
-
-    // Binding the CString to a variable to avoid it being deallocating it, which
-    // would have been the case if we just assigned it to a pointer with .as_ptr()
-    // after instanciation.
-    
-    let nameStr = CString::new("Hello Rust").expect("CString::new failed");
- 
-    let namep = nameStr.as_ptr();
-
-    // Null pointer
-    const exts: *mut *const std::os::raw::c_char = std::ptr::null_mut();
-
-    let mut res: i32 = 0;
-
-    unsafe {
-
-        // Using the vulkan helper
-        res = vh_create_instance(namep, exts, 0);
-
-        vh_shutdown();
-    }
-
-    if res > 0 {
-        println!("Vulkan worked!")
-    }
-
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+    let window = WindowBuilder::new()
+        .with_title("Clunker")
+        .with_inner_size(LogicalSize::new(1024, 768))
+        .build(&event_loop)
+        .unwrap();
+
+    let mut app = unsafe { App::create(&window) };
+    let mut destroying = false;
 
     event_loop.run(move |event, _, control_flow| {
-        control_flow.set_poll(); // vs .set_wait 
+        control_flow.set_poll(); // vs .set_wait
 
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
-        } => {
-            println!("Close requested");
-            control_flow.set_exit();
-        },
-        Event::MainEventsCleared => {
-            window.request_redraw();
-        },
-        Event::RedrawRequested(_) => {
+            } => {
+                control_flow.set_exit();
+                unsafe {
+                    app.destroy();
+                }
+            }
+            Event::MainEventsCleared => {
+                window.request_redraw();
+            }
+            Event::RedrawRequested(_) => {}
+            _ => (),
+        }
+    });
+}
 
-        },
-        _ => ()
+#[derive(Clone, Debug)]
+struct App {
+    nameStr: CString,
+    // Binding the CString to a variable to avoid it being deallocating it, which
+    // would have been the case if we just assigned it to a pointer with .as_ptr()
+    // after instanciation.
+}
+
+impl App {
+    unsafe fn create(window: &Window) -> App {
+        let myself = Self {nameStr: CString::new("Hello Rust").expect("CString::new failed")};
+        
+        let mut res: i32 = 0;
+
+        // Using the vulkan helper
+        res = vh_create_instance(myself.nameStr.as_ptr(), std::ptr::null_mut(), 0);
+
+        if res > 0 {
+            println!("Vulkan worked!")
+        }
+        myself
     }
 
-    });
-    
+    unsafe fn render(&mut self, window: &Window) {}
 
+    unsafe fn destroy(&mut self) {
+        vh_shutdown();
+    }
 }
