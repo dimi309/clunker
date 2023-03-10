@@ -1,4 +1,4 @@
-// Don't crazy with warnings about all the stuff imported from C
+// Don't go crazy with warnings about all the stuff imported from C
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
@@ -51,9 +51,6 @@ fn main() {
 #[derive(Clone, Debug)]
 struct App {
     nameStr: CString,
-    // Binding the CString to a variable to avoid it being deallocating it, which
-    // would have been the case if we just assigned it to a pointer with .as_ptr()
-    // after instanciation.
 }
 
 impl App {
