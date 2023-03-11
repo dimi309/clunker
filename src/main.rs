@@ -58,10 +58,17 @@ fn main() {
         control_flow.set_poll(); // vs .set_wait
 
         match event {
+
+            Event::MainEventsCleared if !destroying =>
+            unsafe {
+                app.render(&window)
+            }
+
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
             } => {
+                destroying = true;
                 control_flow.set_exit();
                 unsafe {
                     app.destroy();
