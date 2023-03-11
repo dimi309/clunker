@@ -184,7 +184,6 @@ name = "clunker"
 version = "0.1.0"
 dependencies = [
  "bindgen",
- "vulkanalia",
  "winit",
 ]
 
@@ -838,24 +837,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "vulkanalia"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa717411225cfc5c096b134fadb6c972a64f06d6654c381e4b3acd70903cfafd"
-dependencies = [
- "vulkanalia-sys",
-]
-
-[[package]]
-name = "vulkanalia-sys"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0584114db68476495ee600aebbfeb0961c91048d284b9e19388acb7634f0287"
-dependencies = [
- "bitflags",
-]
 
 [[package]]
 name = "wasi"
