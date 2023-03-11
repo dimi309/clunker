@@ -15,6 +15,19 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+
+static binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription { binding: 0, stride: 0, inputRate: 0 };
+
+unsafe extern "C" fn set_input_state_callback(insputStateCreateInfo: *mut VkPipelineVertexInputStateCreateInfo) -> i32 {
+    println!("Input state callback called.");
+    1
+} 
+
+unsafe extern "C" fn set_pipeline_layout_callback(pipelineLayoutCreateInfo: *mut VkPipelineLayoutCreateInfo) -> i32 {
+    println!("Pipeline layout callback called.");
+    1
+}
+
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -50,16 +63,29 @@ fn main() {
 
 struct App {
     nameStr: CString,
+    pipeline_index: *mut u32,
 }
 
 impl App {
     unsafe fn create(window: &Window) -> App {
-        let myself = Self {nameStr: CString::new("Hello Rust").expect("CString::new failed")};
-        
+        let myself = Self {nameStr: CString::new("Hello Rust").expect("CString::new failed"), pipeline_index: &mut 100};
+        let vertex_sharder_path = CString::new(std::env::current_dir().unwrap().to_str().unwrap().to_string() + 
+        "\\resources\\shaders\\vertexShader.spv").expect("CString::new failed");
+        let fragment_shader_path = CString::new(std::env::current_dir().unwrap().to_str().unwrap().to_string() + 
+        "resources\\shaders\\vertexShader.spv").expect("CString::new failed");
         let mut res: i32 = 0;
 
         // Using the vulkan helper
         res = vh_create_instance(myself.nameStr.as_ptr(), std::ptr::null_mut(), 0);
+
+        let iscb = 
+        Option::Some(set_input_state_callback as unsafe extern "C" fn(*mut VkPipelineVertexInputStateCreateInfo) -> i32);
+        let iscc = 
+        Option::Some(set_pipeline_layout_callback as unsafe extern "C" fn(*mut VkPipelineLayoutCreateInfo) -> i32);
+
+        vh_create_pipeline(vertex_sharder_path.as_ptr(), fragment_shader_path.as_ptr(), 
+            iscb, iscc, myself.pipeline_index);
+        
 
         if res > 0 {
             println!("Vulkan worked!")
