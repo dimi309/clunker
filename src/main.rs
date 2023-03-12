@@ -6,6 +6,7 @@
 
 use std::ffi::CString;
 use std::os::raw::c_char;
+
 const ARRAY_SIZE: usize = 30;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
@@ -124,6 +125,8 @@ impl App {
 
         // Using the vulkan helper
         res = vh_create_instance(myself.nameStr.as_ptr(), b, 1);
+
+        //vkCreateWin32SurfaceKHR
 
         let iscb = Option::Some(
             set_input_state_callback
