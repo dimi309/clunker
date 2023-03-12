@@ -184,7 +184,7 @@ name = "clunker"
 version = "0.1.0"
 dependencies = [
  "bindgen",
- "vulkanalia",
+ "windows",
  "winit",
 ]
 
@@ -840,24 +840,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
-name = "vulkanalia"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa717411225cfc5c096b134fadb6c972a64f06d6654c381e4b3acd70903cfafd"
-dependencies = [
- "vulkanalia-sys",
-]
-
-[[package]]
-name = "vulkanalia-sys"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0584114db68476495ee600aebbfeb0961c91048d284b9e19388acb7634f0287"
-dependencies = [
- "bitflags",
-]
-
-[[package]]
 name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1032,6 +1014,15 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "windows"
+version = "0.44.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e745dab35a0c4c77aa3ce42d595e13d2003d6902d6b08c9ef5fc326d08da12b"
+dependencies = [
+ "windows-targets",
+]
 
 [[package]]
 name = "windows-sys"

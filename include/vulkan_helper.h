@@ -25,6 +25,9 @@
  */
 #ifndef VULKAN_HELPER_H
 #define VULKAN_HELPER_H
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #ifdef __ANDROID__
 #include <android_native_app_glue.h>
@@ -124,6 +127,21 @@ void vh_wait_gpu_cpu_fence(uint32_t idx);
 int vh_create_instance(const char* application_name,
                        const char** enabled_extension_names,
                        size_t enabled_extension_count);
+
+#ifdef _WIN32
+/**
+ * @brief  Create a vulkan instance with extensions preselected.
+ *         This function will also create the surface. It does not need
+ *         to be created in the client application. This function only works
+ *         on Windows for the time being.
+ * @param  application_name The name of the application that will be using Vulkan
+ * @param  hInstance The windows hInstance
+ * @param  hWnd The application window handle
+ * @return 1 if successful, 0 otherwise
+ */
+int vh_create_instance_and_surface_win32(const char* application_name, HINSTANCE hInstance, HWND hWnd);
+#endif
+
 
 /**
  * @brief  Clear the depth image.

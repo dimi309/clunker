@@ -15,7 +15,7 @@ use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::{Window, WindowBuilder}, platform::windows::WindowExtWindows,
 };
 
 unsafe extern "C" fn set_input_state_callback(
@@ -114,19 +114,10 @@ impl App {
         )
         .expect("CString::new failed");
         let mut res: i32 = 0;
-
-       
-
-        let mut array = [0i8; ARRAY_SIZE];
-
-        to_c_str(VK_KHR_SURFACE_EXTENSION_NAME, &mut array);
-
-        let b = [array.as_ptr()].as_mut_ptr();
-
+        let hi= window.hinstance();
         // Using the vulkan helper
-        res = vh_create_instance(myself.nameStr.as_ptr(), b, 1);
+        res = vh_create_instance(myself.nameStr.as_ptr(), hi as *mut *const i8, window.hwnd().try_into().unwrap());
 
-        //vkCreateWin32SurfaceKHR
 
         let iscb = Option::Some(
             set_input_state_callback
