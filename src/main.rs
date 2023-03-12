@@ -114,9 +114,9 @@ impl App {
         )
         .expect("CString::new failed");
         let mut res: i32 = 0;
-        let hi= window.hinstance();
+        
         // Using the vulkan helper
-        res = vh_create_instance(myself.nameStr.as_ptr(), hi as *mut *const i8, window.hwnd().try_into().unwrap());
+        res = vh_create_instance_and_surface_win32(myself.nameStr.as_ptr(), window.hinstance(), window.hwnd());
 
 
         let iscb = Option::Some(
