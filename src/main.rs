@@ -116,7 +116,7 @@ impl App {
         let mut res: i32 = 0;
         
         // Using the vulkan helper
-        res = vh_create_instance_and_surface_win32(myself.nameStr.as_ptr(), window.hinstance(), window.hwnd());
+        res = vh_create_instance_and_surface_win32(myself.nameStr.as_ptr(), window.hinstance() as *mut HINSTANCE__, window.hwnd() as *mut HWND__);
 
 
         let iscb = Option::Some(

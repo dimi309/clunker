@@ -7,8 +7,6 @@ edition = "2021"
 
 [dependencies]
 winit="0.28.2"
-windows="0.44.0"
-
 
 [build-dependencies]
 bindgen="0.64.0"

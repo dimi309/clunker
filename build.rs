@@ -20,6 +20,12 @@ fn main() {
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
         .clang_arg("-I".to_owned() + vulkan_sdk + r#"\Include"#)
+        .blocklist_item("_IMAGE_TLS_DIRECTORY64")
+        .blocklist_item("IMAGE_TLS_DIRECTORY64")
+        .blocklist_item("PIMAGE_TLS_DIRECTORY64")
+        .blocklist_item("IMAGE_TLS_DIRECTORY")
+        .blocklist_item("PIMAGE_TLS_DIRECTORY64")
+        .blocklist_item("PIMAGE_TLS_DIRECTORY")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
