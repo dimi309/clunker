@@ -5,11 +5,12 @@
 #![allow(unused_assignments)]
 
 use std::ffi::CString;
-use std::os::raw::c_char;
-
-const ARRAY_SIZE: usize = 30;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+const NUM_FRAMES_IN_FLIGHT: u32 = 3;
+const SCREEN_WIDTH: u32 = 1024;
+const SCREEN_HEIGHT: u32 = 768;
 
 use winit::{
     dpi::LogicalSize,
@@ -32,23 +33,13 @@ unsafe extern "C" fn set_pipeline_layout_callback(
     1
 }
 
-unsafe fn to_c_str(byte_sequence: &[u8], array: &mut [i8; ARRAY_SIZE])  {
-    let mut index = 0;
-    while index < byte_sequence.len() && index + 1 < ARRAY_SIZE {
-        if byte_sequence[index] != 0 {
-            array[index] = byte_sequence[index] as c_char;
-            index += 1;
-        } else {
-            break;
-        }
-    }
-}
+
 
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
-        .with_inner_size(LogicalSize::new(1024, 768))
+        .with_inner_size(LogicalSize::new(SCREEN_WIDTH,SCREEN_HEIGHT))
         .build(&event_loop)
         .unwrap();
 
@@ -110,7 +101,7 @@ impl App {
                 .to_str()
                 .unwrap()
                 .to_string()
-                + "resources\\shaders\\vertexShader.spv",
+                + "\\resources\\shaders\\fragmentShader.spv",
         )
         .expect("CString::new failed");
         let mut res: i32 = 0;
@@ -118,6 +109,18 @@ impl App {
         // Using the vulkan helper
         res = vh_create_instance_and_surface_win32(myself.nameStr.as_ptr(), window.hinstance() as *mut HINSTANCE__, window.hwnd() as *mut HWND__);
 
+        if res > 0 {
+            println!("Vulkan instance and surface created.")
+        }
+        else {
+            panic!("Vulkan instance and surface creation has failed.");
+        }
+
+        if vh_init(NUM_FRAMES_IN_FLIGHT) != 1 {
+            panic!("Could not initialise Vulkan.");
+        }
+
+        vh_set_width_height(SCREEN_WIDTH, SCREEN_HEIGHT);
 
         let iscb = Option::Some(
             set_input_state_callback
@@ -136,9 +139,7 @@ impl App {
             myself.pipeline_index,
         );
 
-        if res > 0 {
-            println!("Vulkan worked!")
-        }
+        
         myself
     }
 
