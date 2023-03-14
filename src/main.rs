@@ -16,7 +16,8 @@ use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder}, platform::windows::WindowExtWindows,
+    platform::windows::WindowExtWindows,
+    window::{Window, WindowBuilder},
 };
 
 unsafe extern "C" fn set_input_state_callback(
@@ -33,13 +34,11 @@ unsafe extern "C" fn set_pipeline_layout_callback(
     1
 }
 
-
-
 fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
-        .with_inner_size(LogicalSize::new(SCREEN_WIDTH,SCREEN_HEIGHT))
+        .with_inner_size(LogicalSize::new(SCREEN_WIDTH, SCREEN_HEIGHT))
         .build(&event_loop)
         .unwrap();
 
@@ -50,11 +49,7 @@ fn main() {
         control_flow.set_poll(); // vs .set_wait
 
         match event {
-
-            Event::MainEventsCleared if !destroying =>
-            unsafe {
-                app.render(&window)
-            }
+            Event::MainEventsCleared if !destroying => unsafe { app.render(&window) },
 
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -105,14 +100,17 @@ impl App {
         )
         .expect("CString::new failed");
         let mut res: i32 = 0;
-        
+
         // Using the vulkan helper
-        res = vh_create_instance_and_surface_win32(myself.nameStr.as_ptr(), window.hinstance() as *mut HINSTANCE__, window.hwnd() as *mut HWND__);
+        res = vh_create_instance_and_surface_win32(
+            myself.nameStr.as_ptr(),
+            window.hinstance() as *mut HINSTANCE__,
+            window.hwnd() as *mut HWND__,
+        );
 
         if res > 0 {
             println!("Vulkan instance and surface created.")
-        }
-        else {
+        } else {
             panic!("Vulkan instance and surface creation has failed.");
         }
 
@@ -121,6 +119,12 @@ impl App {
         }
 
         vh_set_width_height(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+        vh_create_sync_objects();
+
+        if vh_create_swapchain() != 1 {
+            panic!("Failed to create Vulkan swapchain.");
+        }
 
         let iscb = Option::Some(
             set_input_state_callback
@@ -139,13 +143,14 @@ impl App {
             myself.pipeline_index,
         );
 
-        
         myself
     }
 
     unsafe fn render(&mut self, window: &Window) {}
 
     unsafe fn destroy(&mut self) {
+        vh_destroy_swapchain();
+        vh_destroy_sync_objects();
         vh_shutdown();
     }
 }
