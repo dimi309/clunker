@@ -4,13 +4,11 @@
 #![allow(non_snake_case)]
 #![allow(unused_assignments)]
 
+mod rectangle;
+
 use std::ffi::CString;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
-const NUM_FRAMES_IN_FLIGHT: u32 = 3;
-const SCREEN_WIDTH: u32 = 1024;
-const SCREEN_HEIGHT: u32 = 768;
 
 use winit::{
     dpi::LogicalSize,
@@ -20,10 +18,34 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+const NUM_FRAMES_IN_FLIGHT: usize = 3;
+const SCREEN_WIDTH: u32 = 1024;
+const SCREEN_HEIGHT: u32 = 768;
+
+
+static mut vertexData: [f32; 16] = [0f32; 16];
+static mut indexData: [u32; 6] = [0u32; 6];
+static mut textureCoordsData: [f32; 8] = [0f32; 8];
+
+static mut vertex_buffer: VkBuffer = std::ptr::null_mut();
+static mut vertex_buffer_memory: VkDeviceMemory  = std::ptr::null_mut();
+static mut index_buffer: VkBuffer  = std::ptr::null_mut();
+static mut index_buffer_memory: VkDeviceMemory  = std::ptr::null_mut();
+
+static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {binding: 0, stride: 4u32 * (std::mem::size_of::<f32>() as u32), inputRate: 0};
+static mut attrib_desc:  VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {binding: 0, location: 0, format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT, offset: 0};
+static mut command_buffer: [VkCommandBuffer; NUM_FRAMES_IN_FLIGHT] = [std::ptr::null_mut(); 3];
+
+
 unsafe extern "C" fn set_input_state_callback(
-    insputStateCreateInfo: *mut VkPipelineVertexInputStateCreateInfo,
+    inputStateCreateInfo: *mut VkPipelineVertexInputStateCreateInfo,
 ) -> i32 {
     println!("Input state callback called.");
+
+    (*inputStateCreateInfo).vertexBindingDescriptionCount = 1;
+    (*inputStateCreateInfo).vertexAttributeDescriptionCount = 1;
+    (*inputStateCreateInfo).pVertexBindingDescriptions = &binding_desc;
+    (*inputStateCreateInfo).pVertexAttributeDescriptions = &attrib_desc;
     1
 }
 
@@ -31,10 +53,13 @@ unsafe extern "C" fn set_pipeline_layout_callback(
     pipelineLayoutCreateInfo: *mut VkPipelineLayoutCreateInfo,
 ) -> i32 {
     println!("Pipeline layout callback called.");
+    (*pipelineLayoutCreateInfo).pSetLayouts = std::ptr::null_mut();
+    (*pipelineLayoutCreateInfo).setLayoutCount = 0;
     1
 }
 
 fn main() {
+
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
@@ -80,25 +105,23 @@ impl App {
         let myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
             pipeline_index: &mut 100,
+
         };
-        let vertex_sharder_path = CString::new(
-            std::env::current_dir()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string()
-                + "\\resources\\shaders\\vertexShader.spv",
-        )
-        .expect("CString::new failed");
-        let fragment_shader_path = CString::new(
-            std::env::current_dir()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string()
-                + "\\resources\\shaders\\fragmentShader.spv",
-        )
-        .expect("CString::new failed");
+
+        crate::rectangle::create_rectangle(-0.5, -0.5, 0.0, 0.5, 0.5, 0.0,
+            &mut vertexData, &mut indexData, &mut textureCoordsData);
+
+        let work_dir =  std::env::current_dir()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+
+        let vertex_sharder_path = CString::new(work_dir.clone() + "\\resources\\shaders\\vertexShader.spv")
+            .expect("CString::new failed");
+        let fragment_shader_path = CString::new(work_dir + "\\resources\\shaders\\fragmentShader.spv")
+            .expect("CString::new failed");
+
         let mut res: i32 = 0;
 
         // Using the vulkan helper
@@ -114,7 +137,7 @@ impl App {
             panic!("Vulkan instance and surface creation has failed.");
         }
 
-        if vh_init(NUM_FRAMES_IN_FLIGHT) != 1 {
+        if vh_init(NUM_FRAMES_IN_FLIGHT as u32) != 1 {
             panic!("Could not initialise Vulkan.");
         }
 
