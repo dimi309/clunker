@@ -173,10 +173,12 @@ impl App {
             myself.pipeline_index,
         );
 
+        let size_float = 16u32 * (std::mem::size_of::<f32>() as u32);
+
         if vh_create_buffer(myself.vertex_buffer, 
             (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT |
             VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT).try_into().unwrap(),
-            16 * <usize as TryInto<f32>>::try_into(std::mem::size_of::<f32>()).unwrap(),
+            size_float,
             myself.vertex_buffer_memory,
             VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT.try_into().unwrap()) != 1 {
             panic!("Failed to create postition buffer");
