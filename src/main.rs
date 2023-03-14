@@ -27,10 +27,6 @@ static mut vertexData: [f32; 16] = [0f32; 16];
 static mut indexData: [u32; 6] = [0u32; 6];
 static mut textureCoordsData: [f32; 8] = [0f32; 8];
 
-static mut vertex_buffer: VkBuffer = std::ptr::null_mut();
-static mut vertex_buffer_memory: VkDeviceMemory  = std::ptr::null_mut();
-static mut index_buffer: VkBuffer  = std::ptr::null_mut();
-static mut index_buffer_memory: VkDeviceMemory  = std::ptr::null_mut();
 
 static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {binding: 0, stride: 4u32 * (std::mem::size_of::<f32>() as u32), inputRate: 0};
 static mut attrib_desc:  VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {binding: 0, location: 0, format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT, offset: 0};
@@ -98,6 +94,12 @@ fn main() {
 struct App {
     nameStr: CString,
     pipeline_index: *mut u32,
+    image_index: *mut u32,
+    
+ vertex_buffer: *mut VkBuffer,
+ vertex_buffer_memory:  *mut VkDeviceMemory,
+ index_buffer: *mut VkBuffer,
+index_buffer_memory: *mut VkDeviceMemory  ,
 }
 
 impl App {
@@ -105,6 +107,11 @@ impl App {
         let myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
             pipeline_index: &mut 100,
+            image_index: std::ptr::null_mut(),
+            vertex_buffer: std::ptr::null_mut(),
+            vertex_buffer_memory: std::ptr::null_mut(),
+            index_buffer: std::ptr::null_mut(),
+           index_buffer_memory: std::ptr::null_mut(),
 
         };
 
@@ -165,6 +172,15 @@ impl App {
             iscc,
             myself.pipeline_index,
         );
+
+        if vh_create_buffer(myself.vertex_buffer, 
+            (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+            VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT).try_into().unwrap(),
+            16 * <usize as TryInto<f32>>::try_into(std::mem::size_of::<f32>()).unwrap(),
+            myself.vertex_buffer_memory,
+            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT.try_into().unwrap()) != 1 {
+            panic!("Failed to create postition buffer");
+          }
 
         myself
     }
