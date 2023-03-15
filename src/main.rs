@@ -118,6 +118,8 @@ struct App {
     index_buffer_ptr: *mut VkBuffer,
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
+
+    current_frame_index: *mut u32,
 }
 
 impl App {
@@ -143,6 +145,7 @@ impl App {
             index_buffer_ptr: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
+            current_frame_index: std::ptr::null_mut(),
         };
 
         crate::rectangle::create_rectangle(
@@ -355,7 +358,35 @@ impl App {
         myself
     }
 
-    unsafe fn render(&mut self, window: &Window) {}
+    unsafe fn render(&mut self, window: &Window) {
+        vh_acquire_next_image(
+            *self.pipeline_index,
+            self.image_index,
+            self.current_frame_index,
+        );
+        vh_wait_gpu_cpu_fence(*self.current_frame_index);
+
+        let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[*self.current_frame_index as usize];
+
+        if *cb_ptr == std::ptr::null_mut() {
+            vh_begin_draw_command_buffer(cb_ptr);
+            vh_bind_pipeline_to_command_buffer(*self.pipeline_index, cb_ptr);
+            let binding: VkDeviceSize = 0;
+            vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &self.vertex_buffer, &binding);
+            vkCmdBindIndexBuffer(
+                *cb_ptr,
+                self.index_buffer,
+                0,
+                VkIndexType_VK_INDEX_TYPE_UINT32,
+            );
+            vkCmdDrawIndexed(*cb_ptr, 6, 1, 0, 0, 0);
+            vh_end_draw_command_buffer(cb_ptr);
+        }
+
+        vh_draw(cb_ptr, 1);
+        vh_draw(cb_ptr, 0);
+        vh_present_next_image();
+    }
 
     unsafe fn destroy(&mut self) {
         for mut idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
