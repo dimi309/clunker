@@ -22,16 +22,22 @@ const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
 
-
 static mut vertexData: [f32; 16] = [0f32; 16];
 static mut indexData: [u32; 6] = [0u32; 6];
 static mut textureCoordsData: [f32; 8] = [0f32; 8];
 
-
-static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {binding: 0, stride: 4u32 * (std::mem::size_of::<f32>() as u32), inputRate: 0};
-static mut attrib_desc:  VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {binding: 0, location: 0, format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT, offset: 0};
+static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {
+    binding: 0,
+    stride: 4u32 * (std::mem::size_of::<f32>() as u32),
+    inputRate: 0,
+};
+static mut attrib_desc: VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {
+    binding: 0,
+    location: 0,
+    format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
+    offset: 0,
+};
 static mut command_buffer: [VkCommandBuffer; NUM_FRAMES_IN_FLIGHT] = [std::ptr::null_mut(); 3];
-
 
 unsafe extern "C" fn set_input_state_callback(
     inputStateCreateInfo: *mut VkPipelineVertexInputStateCreateInfo,
@@ -55,7 +61,6 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 fn main() {
-
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
@@ -94,40 +99,60 @@ fn main() {
 struct App {
     nameStr: CString,
     pipeline_index: *mut u32,
-    image_index: *mut u32,
     
- vertex_buffer: *mut VkBuffer,
- vertex_buffer_memory:  *mut VkDeviceMemory,
- index_buffer: *mut VkBuffer,
-index_buffer_memory: *mut VkDeviceMemory  ,
+    vertex_buffer: VkBuffer,
+    vertex_buffer_ptr: *mut VkBuffer,
+            
+    vertex_buffer_memory: VkDeviceMemory,
+    vertex_buffer_memory_ptr: *mut VkDeviceMemory,
+
+    image_index: *mut u32,
+    index_buffer: *mut VkBuffer,
+    index_buffer_memory: *mut VkDeviceMemory,
 }
 
 impl App {
     unsafe fn create(window: &Window) -> App {
-        let myself = Self {
+        let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
             pipeline_index: &mut 100,
-            image_index: std::ptr::null_mut(),
-            vertex_buffer: std::ptr::null_mut(),
-            vertex_buffer_memory: std::ptr::null_mut(),
-            index_buffer: std::ptr::null_mut(),
-           index_buffer_memory: std::ptr::null_mut(),
+            
+            vertex_buffer : std::ptr::null_mut(),
+            vertex_buffer_ptr : std::ptr::null_mut(),
+            
+            vertex_buffer_memory : std::ptr::null_mut(),
+            vertex_buffer_memory_ptr : std::ptr::null_mut(),
+            
 
+            image_index: std::ptr::null_mut(),
+            index_buffer: std::ptr::null_mut(),
+            index_buffer_memory: std::ptr::null_mut(),
         };
 
-        crate::rectangle::create_rectangle(-0.5, -0.5, 0.0, 0.5, 0.5, 0.0,
-            &mut vertexData, &mut indexData, &mut textureCoordsData);
+        crate::rectangle::create_rectangle(
+            -0.5,
+            -0.5,
+            0.0,
+            0.5,
+            0.5,
+            0.0,
+            &mut vertexData,
+            &mut indexData,
+            &mut textureCoordsData,
+        );
 
-        let work_dir =  std::env::current_dir()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_string();
+        let work_dir = std::env::current_dir()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
 
-        let vertex_sharder_path = CString::new(work_dir.clone() + "\\resources\\shaders\\vertexShader.spv")
-            .expect("CString::new failed");
-        let fragment_shader_path = CString::new(work_dir + "\\resources\\shaders\\fragmentShader.spv")
-            .expect("CString::new failed");
+        let vertex_sharder_path =
+            CString::new(work_dir.clone() + "\\resources\\shaders\\vertexShader.spv")
+                .expect("CString::new failed");
+        let fragment_shader_path =
+            CString::new(work_dir + "\\resources\\shaders\\fragmentShader.spv")
+                .expect("CString::new failed");
 
         let mut res: i32 = 0;
 
@@ -175,15 +200,40 @@ impl App {
 
         let size_float = 16u32 * (std::mem::size_of::<f32>() as u32);
 
-        if vh_create_buffer(myself.vertex_buffer, 
-            (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-            VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT).try_into().unwrap(),
-            size_float,
-            myself.vertex_buffer_memory,
-            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT.try_into().unwrap()) != 1 {
-            panic!("Failed to create postition buffer");
-          }
+        myself.vertex_buffer_ptr = &mut myself.vertex_buffer;
+        myself.vertex_buffer_memory_ptr = &mut myself.vertex_buffer_memory;
 
+        if vh_create_buffer(
+             myself.vertex_buffer_ptr,
+            (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
+                | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                .try_into()
+                .unwrap(),
+            size_float,
+            myself.vertex_buffer_memory_ptr,
+            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                .try_into()
+                .unwrap(),
+        ) != 1
+        {
+            panic!("Failed to create postition buffer");
+        }
+
+        /*vkMapMemory(
+            vh_logical_device,
+            staging_buffer_memory,
+            0,
+            VK_WHOLE_SIZE,
+            0,
+            &staging_data,
+        );
+        memcpy(staging_data, vertexData, 16 * sizeof(float));
+        vkUnmapMemory(vh_logical_device, staging_buffer_memory);
+
+        vh_copy_buffer(staging_buffer, vertex_buffer, 16 * sizeof(float));
+
+        vh_destroy_buffer(staging_buffer, staging_buffer_memory);
+*/
         myself
     }
 
