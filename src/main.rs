@@ -62,6 +62,13 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 fn main() {
+
+    let mut input: String = String::new();
+
+    println!("Type a number:");
+
+    std::io::stdin().read_line(&mut input).expect("Failed");
+
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
@@ -99,7 +106,7 @@ fn main() {
 
 struct App {
     nameStr: CString,
-    pipeline_index: *mut u32,
+    pipeline_index: u32,
 
     vertex_buffer: VkBuffer,
     vertex_buffer_ptr: *mut VkBuffer,
@@ -125,7 +132,7 @@ impl App {
     unsafe fn create(window: &Window) -> App {
         let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
-            pipeline_index: &mut 100,
+            pipeline_index: 100,
 
             vertex_buffer: std::ptr::null_mut(),
             vertex_buffer_ptr: std::ptr::null_mut(),
@@ -207,12 +214,14 @@ impl App {
                 as unsafe extern "C" fn(*mut VkPipelineLayoutCreateInfo) -> i32,
         );
 
+        let pidx_ptr: *mut u32 = &mut myself.pipeline_index;
+
         vh_create_pipeline(
             vertex_sharder_path.as_ptr(),
             fragment_shader_path.as_ptr(),
             iscb,
             iscc,
-            myself.pipeline_index,
+            pidx_ptr,
         );
 
         myself.vertex_buffer_ptr = &mut myself.vertex_buffer;
@@ -365,7 +374,7 @@ impl App {
 
 
         vh_acquire_next_image(
-            *self.pipeline_index,
+            self.pipeline_index,
             img_ptr,
             cfi_ptr,
         );
@@ -375,7 +384,8 @@ impl App {
 
         if *cb_ptr == std::ptr::null_mut() {
             vh_begin_draw_command_buffer(cb_ptr);
-            vh_bind_pipeline_to_command_buffer(*self.pipeline_index, cb_ptr);
+            let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
+            vh_bind_pipeline_to_command_buffer(self.pipeline_index, cb_cptr);
             let binding: VkDeviceSize = 0;
             vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &self.vertex_buffer, &binding);
             vkCmdBindIndexBuffer(
@@ -402,7 +412,7 @@ impl App {
 
         vh_destroy_buffer(self.vertex_buffer, self.vertex_buffer_memory);
         vh_destroy_buffer(self.index_buffer, self.index_buffer_memory);
-        vh_destroy_pipeline(*self.pipeline_index);
+        vh_destroy_pipeline(self.pipeline_index);
 
         vh_destroy_swapchain();
         vh_destroy_sync_objects();
