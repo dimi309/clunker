@@ -76,7 +76,7 @@ fn main() {
         control_flow.set_poll(); // vs .set_wait
 
         match event {
-            Event::MainEventsCleared if !destroying => unsafe { app.render(&window) },
+            Event::MainEventsCleared if !destroying => unsafe { app.render() },
 
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -113,13 +113,12 @@ struct App {
     staging_buffer_memory: VkDeviceMemory,
     staging_buffer_memory_ptr: *mut VkDeviceMemory,
 
-    image_index: *mut u32,
     index_buffer: VkBuffer,
     index_buffer_ptr: *mut VkBuffer,
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
 
-    current_frame_index: *mut u32,
+
 }
 
 impl App {
@@ -140,12 +139,11 @@ impl App {
             staging_buffer_memory: std::ptr::null_mut(),
             staging_buffer_memory_ptr: std::ptr::null_mut(),
 
-            image_index: std::ptr::null_mut(),
             index_buffer: std::ptr::null_mut(),
             index_buffer_ptr: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
-            current_frame_index: std::ptr::null_mut(),
+            
         };
 
         crate::rectangle::create_rectangle(
@@ -358,15 +356,22 @@ impl App {
         myself
     }
 
-    unsafe fn render(&mut self, window: &Window) {
+    unsafe fn render(&mut self) {
+        let mut current_frame_index = 0;
+        let cfi_ptr: *mut u32 = &mut current_frame_index;
+
+        let mut image_index = 0;
+        let img_ptr: *mut u32 = &mut image_index;
+
+
         vh_acquire_next_image(
             *self.pipeline_index,
-            self.image_index,
-            self.current_frame_index,
+            img_ptr,
+            cfi_ptr,
         );
-        vh_wait_gpu_cpu_fence(*self.current_frame_index);
+        vh_wait_gpu_cpu_fence(current_frame_index);
 
-        let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[*self.current_frame_index as usize];
+        let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[current_frame_index as usize];
 
         if *cb_ptr == std::ptr::null_mut() {
             vh_begin_draw_command_buffer(cb_ptr);
@@ -389,7 +394,7 @@ impl App {
     }
 
     unsafe fn destroy(&mut self) {
-        for mut idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
+        for idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
             vh_wait_gpu_cpu_fence(idx.try_into().unwrap());
             let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
             vh_destroy_draw_command_buffer(cb_p);
