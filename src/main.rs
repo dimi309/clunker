@@ -37,6 +37,7 @@ static mut attrib_desc: VkVertexInputAttributeDescription = VkVertexInputAttribu
     format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
     offset: 0,
 };
+
 static mut command_buffer: [VkCommandBuffer; NUM_FRAMES_IN_FLIGHT] = [std::ptr::null_mut(); 3];
 
 unsafe extern "C" fn set_input_state_callback(
@@ -292,15 +293,13 @@ impl App {
                 .unwrap(),
             6u32 * (std::mem::size_of::<u32>() as u32),
             myself.index_buffer_memory_ptr,
-            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 
-            .try_into()
-            .unwrap(),
+            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+                .try_into()
+                .unwrap(),
         ) != 1
         {
             panic!("Failed to create index buffer");
         }
-
-
 
         myself.staging_buffer = std::ptr::null_mut();
         myself.staging_buffer_ptr = &mut myself.staging_buffer;
@@ -353,13 +352,22 @@ impl App {
 
         vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
 
-
         myself
     }
 
     unsafe fn render(&mut self, window: &Window) {}
 
     unsafe fn destroy(&mut self) {
+        for mut idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
+            vh_wait_gpu_cpu_fence(idx.try_into().unwrap());
+            let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
+            vh_destroy_draw_command_buffer(cb_p);
+        }
+
+        vh_destroy_buffer(self.vertex_buffer, self.vertex_buffer_memory);
+        vh_destroy_buffer(self.index_buffer, self.index_buffer_memory);
+        vh_destroy_pipeline(*self.pipeline_index);
+
         vh_destroy_swapchain();
         vh_destroy_sync_objects();
         vh_shutdown();
