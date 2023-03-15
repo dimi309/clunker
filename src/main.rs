@@ -113,8 +113,10 @@ struct App {
     staging_buffer_memory_ptr: *mut VkDeviceMemory,
 
     image_index: *mut u32,
-    index_buffer: *mut VkBuffer,
-    index_buffer_memory: *mut VkDeviceMemory,
+    index_buffer: VkBuffer,
+    index_buffer_ptr: *mut VkBuffer,
+    index_buffer_memory: VkDeviceMemory,
+    index_buffer_memory_ptr: *mut VkDeviceMemory,
 }
 
 impl App {
@@ -137,7 +139,9 @@ impl App {
 
             image_index: std::ptr::null_mut(),
             index_buffer: std::ptr::null_mut(),
+            index_buffer_ptr: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
+            index_buffer_memory_ptr: std::ptr::null_mut(),
         };
 
         crate::rectangle::create_rectangle(
@@ -276,6 +280,79 @@ impl App {
         );
 
         vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
+
+        myself.index_buffer_ptr = &mut myself.index_buffer;
+        myself.index_buffer_memory_ptr = &mut myself.index_buffer_memory;
+
+        if vh_create_buffer(
+            myself.index_buffer_ptr,
+            (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
+                | VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+                .try_into()
+                .unwrap(),
+            6u32 * (std::mem::size_of::<u32>() as u32),
+            myself.index_buffer_memory_ptr,
+            VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT 
+            .try_into()
+            .unwrap(),
+        ) != 1
+        {
+            panic!("Failed to create index buffer");
+        }
+
+
+
+        myself.staging_buffer = std::ptr::null_mut();
+        myself.staging_buffer_ptr = &mut myself.staging_buffer;
+        myself.staging_buffer_memory = std::ptr::null_mut();
+        myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
+
+        if vh_create_buffer(
+            myself.staging_buffer_ptr,
+            VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+                .try_into()
+                .unwrap(),
+            6u32 * (std::mem::size_of::<u32>() as u32),
+            myself.staging_buffer_memory_ptr,
+            (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+                .try_into()
+                .unwrap(),
+        ) != 1
+        {
+            panic!("Failed to create staging buffer for indices.");
+        }
+
+        staging_data = std::ptr::null_mut();
+        staging_data_ptr = &mut staging_data;
+
+        vkMapMemory(
+            vh_logical_device,
+            myself.staging_buffer_memory,
+            0,
+            VK_WHOLE_SIZE as u64,
+            0,
+            staging_data_ptr,
+        );
+
+        let src_ptr = &mut indexData as *const u32;
+
+        std::ptr::copy_nonoverlapping(
+            src_ptr as *const u8,
+            staging_data as *mut u8,
+            6usize * std::mem::size_of::<u32>(),
+        );
+
+        vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
+
+        vh_copy_buffer(
+            myself.staging_buffer,
+            myself.index_buffer,
+            6u64 * (std::mem::size_of::<u32>() as u64),
+        );
+
+        vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
+
 
         myself
     }
