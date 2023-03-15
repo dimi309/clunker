@@ -99,12 +99,18 @@ fn main() {
 struct App {
     nameStr: CString,
     pipeline_index: *mut u32,
-    
+
     vertex_buffer: VkBuffer,
     vertex_buffer_ptr: *mut VkBuffer,
-            
+
     vertex_buffer_memory: VkDeviceMemory,
     vertex_buffer_memory_ptr: *mut VkDeviceMemory,
+
+    staging_buffer: VkBuffer,
+    staging_buffer_ptr: *mut VkBuffer,
+
+    staging_buffer_memory: VkDeviceMemory,
+    staging_buffer_memory_ptr: *mut VkDeviceMemory,
 
     image_index: *mut u32,
     index_buffer: *mut VkBuffer,
@@ -116,13 +122,18 @@ impl App {
         let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
             pipeline_index: &mut 100,
-            
-            vertex_buffer : std::ptr::null_mut(),
-            vertex_buffer_ptr : std::ptr::null_mut(),
-            
-            vertex_buffer_memory : std::ptr::null_mut(),
-            vertex_buffer_memory_ptr : std::ptr::null_mut(),
-            
+
+            vertex_buffer: std::ptr::null_mut(),
+            vertex_buffer_ptr: std::ptr::null_mut(),
+
+            vertex_buffer_memory: std::ptr::null_mut(),
+            vertex_buffer_memory_ptr: std::ptr::null_mut(),
+
+            staging_buffer: std::ptr::null_mut(),
+            staging_buffer_ptr: std::ptr::null_mut(),
+
+            staging_buffer_memory: std::ptr::null_mut(),
+            staging_buffer_memory_ptr: std::ptr::null_mut(),
 
             image_index: std::ptr::null_mut(),
             index_buffer: std::ptr::null_mut(),
@@ -198,42 +209,74 @@ impl App {
             myself.pipeline_index,
         );
 
-        let size_float = 16u32 * (std::mem::size_of::<f32>() as u32);
-
         myself.vertex_buffer_ptr = &mut myself.vertex_buffer;
         myself.vertex_buffer_memory_ptr = &mut myself.vertex_buffer_memory;
 
         if vh_create_buffer(
-             myself.vertex_buffer_ptr,
+            myself.vertex_buffer_ptr,
             (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                 | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                 .try_into()
                 .unwrap(),
-            size_float,
+            16u32 * (std::mem::size_of::<f32>() as u32),
             myself.vertex_buffer_memory_ptr,
             VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                 .try_into()
                 .unwrap(),
         ) != 1
         {
-            panic!("Failed to create postition buffer");
+            panic!("Failed to create postition buffer.");
         }
 
-        /*vkMapMemory(
+        myself.staging_buffer_ptr = &mut myself.staging_buffer;
+        myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
+
+        if vh_create_buffer(
+            myself.staging_buffer_ptr,
+            VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+                .try_into()
+                .unwrap(),
+            16u32 * (std::mem::size_of::<f32>() as u32),
+            myself.staging_buffer_memory_ptr,
+            (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+                .try_into()
+                .unwrap(),
+        ) != 1
+        {
+            panic!("Failed to create staging buffer for vertices.");
+        }
+
+        let mut staging_data: *mut ::std::os::raw::c_void = std::ptr::null_mut();
+        let mut staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
+
+        vkMapMemory(
             vh_logical_device,
-            staging_buffer_memory,
+            myself.staging_buffer_memory,
             0,
-            VK_WHOLE_SIZE,
+            VK_WHOLE_SIZE as u64,
             0,
-            &staging_data,
+            staging_data_ptr,
         );
-        memcpy(staging_data, vertexData, 16 * sizeof(float));
-        vkUnmapMemory(vh_logical_device, staging_buffer_memory);
 
-        vh_copy_buffer(staging_buffer, vertex_buffer, 16 * sizeof(float));
+        let src_ptr = &mut vertexData as *const f32;
 
-        vh_destroy_buffer(staging_buffer, staging_buffer_memory);
-*/
+        std::ptr::copy_nonoverlapping(
+            src_ptr as *const u8,
+            staging_data as *mut u8,
+            16usize * std::mem::size_of::<f32>(),
+        );
+
+        vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
+
+        vh_copy_buffer(
+            myself.staging_buffer,
+            myself.vertex_buffer,
+            16u64 * (std::mem::size_of::<f32>() as u64),
+        );
+
+        vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
+
         myself
     }
 
