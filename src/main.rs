@@ -63,12 +63,6 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 
 fn main() {
 
-    let mut input: String = String::new();
-
-    println!("Type a number:");
-
-    std::io::stdin().read_line(&mut input).expect("Failed");
-
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
