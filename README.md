@@ -5,8 +5,8 @@ This is my first ever experiment with the Rust language. I have no idea where
 it is going. For the moment it is basically a program, written in Rust, which 
 draws a box using the Vulkan API. 
 
-I am not using the ash or any other Vulkan-wrapping crate. I am just accessing
-my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) library (written in C) with Rust.
+I am not using ash or any other Vulkan-wrapping crate. I am just accessing
+my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with Rust.
 (vulkan_helper is also used by the [small3d](https://github.com/dimi309/small3d) game development
 library)
 The vulkan_helper and the Vulkan API bindings are created during the build with bindgen.
