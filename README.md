@@ -20,4 +20,6 @@ soon.
 Prerequisites: Rust, Visual Studio, Vulkan SDK (with the`VULKAN_SDK` environment 
 variable set to the hope path of the SDK).
 
+![snapshot](clunker.png)
+
 
