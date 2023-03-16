@@ -10,6 +10,7 @@ cmake --build . --config Debug
 xcopy include ..\..\include /i /s /y
 xcopy lib ..\..\lib /i /s /y
 cd ..
+xcopy resources ..\resources /i /s /y
 mkdir ..\target\debug
 xcopy resources ..\target\debug\resources /i /s /y
 mkdir ..\target\release
