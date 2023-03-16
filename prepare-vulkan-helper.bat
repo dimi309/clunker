@@ -7,5 +7,11 @@ cd build
 cmake .. -G"Visual Studio 17 2022"
 cmake --build . --config Debug
 
-
+xcopy include ..\..\include /i /s /y
+xcopy lib ..\..\lib /i /s /y
+cd ..
+mkdir ..\target\debug
+xcopy resources ..\target\debug\resources /i /s /y
+mkdir ..\target\release
+xcopy resources ..\target\release\resources /i /s /y
 
