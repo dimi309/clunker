@@ -1,3 +1,4 @@
+git submodule update --init
 cd vulkan_helper\resources\shaders
 glslangValidator -V fragmentShader.frag -o fragmentShader.spv
 glslangValidator -V vertexShader.vert -o vertexShader.spv

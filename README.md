@@ -14,11 +14,18 @@ The vulkan_helper and the Vulkan API bindings are created during the build with 
 The code is clumsy and unsafe (I am new in crab-land) but it works. You need to
 execute `prepare-vulkan-helper.bat` to build and set up the vulkan_helper
 library before launching cargo. I've just prepared and tested the project on
-Windows for the time being, but I will get it running on Linux and MacOS
-soon.
+Windows, at least for the time being.
 
-Prerequisites: Rust, Visual Studio, Vulkan SDK (with the`VULKAN_SDK` environment 
-variable set to the path of the SDK).
+Prerequisites
+-------------
+
+Rust, Visual Studio, Vulkan SDK (with the`VULKAN_SDK` environment 
+variable set to the path of the SDK)
+
+On Linux, clang needs to be installed, on Ubuntu / Debian for example
+it is done like this:
+
+   sudo apt-get install libclang-dev
 
 ![snapshot](clunker.png)
 
