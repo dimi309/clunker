@@ -14,9 +14,11 @@ use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    platform::windows::WindowExtWindows,
     window::{Window, WindowBuilder},
 };
+
+#[cfg(target_os = "linux")]
+use winit::platform::x11::WindowExtX11;
 
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const SCREEN_WIDTH: u32 = 1024;
@@ -66,6 +68,7 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
+	.with_visible(true)
         .with_inner_size(LogicalSize::new(SCREEN_WIDTH, SCREEN_HEIGHT))
         .build(&event_loop)
         .unwrap();
@@ -123,6 +126,39 @@ struct App {
 }
 
 impl App {
+    #[cfg(target_os = "windows")]
+    unsafe fn initVulkan(&self, window: &Window) {
+	// Using the vulkan helper
+        let res = vh_create_instance_and_surface_win32(
+            myself.nameStr.as_ptr(),
+            window.hinstance() as *mut HINSTANCE__,
+            window.hwnd() as *mut HWND__,
+        );
+
+        if res > 0 {
+            println!("Vulkan instance and surface created.")
+        } else {
+            panic!("Vulkan instance and surface creation has failed.");
+        }
+    }
+    #[cfg(target_os = "linux")]
+    unsafe fn initVulkan(&self, window: &Window) {
+	// Using the vulkan helper
+	let w = window.xlib_window().unwrap() as *mut u32;
+	let c = window.xcb_connection().unwrap() as *mut xcb_connection_t;
+        let res = vh_create_instance_and_surface_linux(
+            self.nameStr.as_ptr(),
+            c,
+            w,
+        );
+
+        if res > 0 {
+            println!("Vulkan instance and surface created.")
+        } else {
+            panic!("Vulkan instance and surface creation has failed.");
+        }
+    }
+    
     unsafe fn create(window: &Window) -> App {
         let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
@@ -172,20 +208,8 @@ impl App {
             CString::new(work_dir + "\\resources\\shaders\\fragmentShader.spv")
                 .expect("CString::new failed");
 
-        let mut res: i32 = 0;
-
-        // Using the vulkan helper
-        res = vh_create_instance_and_surface_win32(
-            myself.nameStr.as_ptr(),
-            window.hinstance() as *mut HINSTANCE__,
-            window.hwnd() as *mut HWND__,
-        );
-
-        if res > 0 {
-            println!("Vulkan instance and surface created.")
-        } else {
-            panic!("Vulkan instance and surface creation has failed.");
-        }
+        
+        App::initVulkan(&myself, &window);
 
         if vh_init(NUM_FRAMES_IN_FLIGHT as u32) != 1 {
             panic!("Could not initialise Vulkan.");
