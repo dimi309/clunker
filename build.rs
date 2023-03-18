@@ -19,6 +19,21 @@ fn get_vulkan_sdk() -> String {
     return env!("VULKAN_SDK").to_string();
 }
 
+#[cfg(target_os = "windows")]
+fn get_include() -> String {
+    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() +  r#"/include"#;
+}
+
+#[cfg(target_os = "linux")]
+fn get_include() -> String {
+    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() +  r#"/include"#;
+}
+
+#[cfg(target_os = "macos")]
+fn get_include() -> String {
+    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() + r#"/../MoltenVK/include"#;
+}
+
 fn main() {
 
     // env::var runs at runtime
@@ -29,6 +44,7 @@ fn main() {
     println!("cargo:rustc-link-search={}/lib", vulkan_sdk);
 
     println!("cargo:rustc-link-lib=vulkan_helper");
+
     if cfg!(windows) {
 	println!("cargo:rustc-link-lib=vulkan-1");
 	println!("cargo:rerun-if-changed=wrapper_win32.h");
@@ -37,20 +53,9 @@ fn main() {
 	println!("cargo:rerun-if-changed=wrapper.h");
     }
 
-
-
-    //if cfg!(macos) {
-    let include_str = "-I".to_owned() + &vulkan_sdk.clone() + r#"/../MoltenVK/include"#;
-    let include_str2 = "I".to_owned() + &vulkan_sdk +  r#"/include"#;
-    println!("cargo:warning={}", &include_str.clone());
-    println!("cargo:warning={}", &include_str2.clone());
-    //}
-
-   
-
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .clang_arg(include_str)
+        .clang_arg(get_include())
         .blocklist_item("_IMAGE_TLS_DIRECTORY64")
         .blocklist_item("IMAGE_TLS_DIRECTORY64")
         .blocklist_item("PIMAGE_TLS_DIRECTORY64")
