@@ -26,7 +26,7 @@ fn get_include() -> String {
 
 #[cfg(target_os = "linux")]
 fn get_include() -> String {
-    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() +  r#"/include"#;
+    return "-I".to_owned() + r#"/usr/include"#;
 }
 
 #[cfg(target_os = "macos")]
