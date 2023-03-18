@@ -6,7 +6,7 @@ use std::string::String;
 
 #[cfg(target_os = "windows")]
 fn get_vulkan_sdk() -> String {
-    env!("VULKAN_SDK");
+    return env!("VULKAN_SDK").to_string();
 }
 
 #[cfg(target_os = "linux")]

@@ -20,6 +20,9 @@ use winit::{
 #[cfg(target_os = "linux")]
 use winit::platform::x11::WindowExtX11;
 
+#[cfg(target_os = "windows")]
+use winit::platform::windows::WindowExtWindows;
+
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
@@ -130,7 +133,7 @@ impl App {
     unsafe fn initVulkan(&self, window: &Window) {
 	// Using the vulkan helper
         let res = vh_create_instance_and_surface_win32(
-            myself.nameStr.as_ptr(),
+            self.nameStr.as_ptr(),
             window.hinstance() as *mut HINSTANCE__,
             window.hwnd() as *mut HWND__,
         );
