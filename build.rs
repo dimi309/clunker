@@ -14,6 +14,11 @@ fn get_vulkan_sdk() -> String {
     return " ".to_string();
 }
 
+#[cfg(target_os = "macos")]
+fn get_vulkan_sdk() -> String {
+    return env!("VULKAN_SDK").to_string();
+}
+
 fn main() {
 
     // env::var runs at runtime
@@ -21,7 +26,7 @@ fn main() {
     let vulkan_sdk = get_vulkan_sdk();
 
     println!("cargo:rustc-link-search=lib");
-    println!("cargo:rustc-link-search={}\\Lib", vulkan_sdk);
+    println!("cargo:rustc-link-search={}/lib", vulkan_sdk);
 
     println!("cargo:rustc-link-lib=vulkan_helper");
     if cfg!(windows) {
@@ -32,9 +37,20 @@ fn main() {
 	println!("cargo:rerun-if-changed=wrapper.h");
     }
 
+
+
+    //if cfg!(macos) {
+    let include_str = "-I".to_owned() + &vulkan_sdk.clone() + r#"/../MoltenVK/include"#;
+    let include_str2 = "I".to_owned() + &vulkan_sdk +  r#"/include"#;
+    println!("cargo:warning={}", &include_str.clone());
+    println!("cargo:warning={}", &include_str2.clone());
+    //}
+
+   
+
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .clang_arg("-I".to_owned() + &vulkan_sdk + r#"\Include"#)
+        .clang_arg(include_str)
         .blocklist_item("_IMAGE_TLS_DIRECTORY64")
         .blocklist_item("IMAGE_TLS_DIRECTORY64")
         .blocklist_item("PIMAGE_TLS_DIRECTORY64")

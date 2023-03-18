@@ -23,6 +23,9 @@ use winit::platform::x11::WindowExtX11;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
 
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowExtMacOS;
+
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
@@ -153,6 +156,20 @@ impl App {
             self.nameStr.as_ptr(),
             c,
             w,
+        );
+
+        if res > 0 {
+            println!("Vulkan instance and surface created.")
+        } else {
+            panic!("Vulkan instance and surface creation has failed.");
+        }
+    }
+    #[cfg(target_os = "macos")]
+    unsafe fn initVulkan(&self, window: &Window) {
+	// Using the vulkan helper
+        let res = vh_create_instance_and_surface_macos(
+            self.nameStr.as_ptr(),
+            window.ns_view(),
         );
 
         if res > 0 {
