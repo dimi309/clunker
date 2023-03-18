@@ -1,9 +1,8 @@
 Clunker
 =======
 
-This is my first ever experiment with the Rust language. I have no idea where
-it is going. For the moment it is basically a program, written in Rust, which 
-draws a box using the Vulkan API. 
+This is my first ever experiment with the Rust language. It is basically a program, 
+written in Rust, which draws a box using the Vulkan API. 
 
 I am not using ash or any other Vulkan-wrapping crate. I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with Rust
@@ -12,9 +11,12 @@ library).
 The vulkan_helper and the Vulkan API bindings are created during the build with bindgen.
 
 The code is clumsy and unsafe (I am new in crab-land) but it works. You need to
-execute `prepare-vulkan-helper.bat` to build and set up the vulkan_helper
-library before launching cargo. I've just prepared and tested the project on
-Windows, at least for the time being.
+execute `prepare-vulkan-helper.bat`on Windows or `prepare-vulkan-helper.sh` 
+on Linux and MacOS to build and set up the vulkan_helper library before launching cargo. 
+Before that you might also need to pull it with git from the `vulkan_helper` directory,
+as it has been added as a git submodule. Unfortunately, I have only managed to run the
+program successfully on Windows, as I am having some [issues](https://github.com/dimi309/clunker/issues) with the winit crate on
+MacOS and Linux.
 
 Prerequisites
 -------------
