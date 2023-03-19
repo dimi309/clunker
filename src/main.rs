@@ -7,6 +7,7 @@
 mod rectangle;
 
 use std::ffi::CString;
+use std::os::raw::c_void;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -129,6 +130,8 @@ struct App {
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
 
+    xcb_connx: *mut c_void,
+    xlib_win: u64,
 
 }
 
@@ -149,15 +152,13 @@ impl App {
         }
     }
     #[cfg(target_os = "linux")]
-    unsafe fn initVulkan(&self, window: &Window) {
+    unsafe fn initVulkan(&self, _window: &Window) {
 	// Using the vulkan helper
 
-        let c = window.xcb_connection().unwrap();
-        let w = window.xlib_window().unwrap();
         let res = vh_create_instance_and_surface_linux(
             self.nameStr.as_ptr(),
-            c as *mut xcb_connection_t,
-            w as *mut u32,
+            self.xcb_connx as *mut xcb_connection_t,
+            self.xlib_win as *mut xcb_window_t,
         );
 
         if res > 0 {
@@ -203,6 +204,9 @@ impl App {
             index_buffer_ptr: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
+
+            xcb_connx: std::ptr::null_mut(),
+            xlib_win: 0u64,
             
         };
 
@@ -232,6 +236,9 @@ impl App {
                 .expect("CString::new failed");
 
         
+        myself.xcb_connx = window.xcb_connection().unwrap();
+        myself.xlib_win = window.xlib_window().unwrap();
+
         App::initVulkan(&myself, &window);
 
         if vh_init(NUM_FRAMES_IN_FLIGHT as u32) != 1 {
