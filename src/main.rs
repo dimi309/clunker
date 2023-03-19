@@ -10,6 +10,7 @@ use std::ffi::CString;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
+
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
@@ -164,6 +165,7 @@ impl App {
             panic!("Vulkan instance and surface creation has failed.");
         }
     }
+
     #[cfg(target_os = "macos")]
     unsafe fn initVulkan(&self, window: &Window) {
 	// Using the vulkan helper
@@ -178,7 +180,7 @@ impl App {
             panic!("Vulkan instance and surface creation has failed.");
         }
     }
-    
+
     unsafe fn create(window: &Window) -> App {
         let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
@@ -222,10 +224,10 @@ impl App {
             .to_string();
 
         let vertex_sharder_path =
-            CString::new(work_dir.clone() + "\\resources\\shaders\\vertexShader.spv")
+            CString::new(work_dir.clone() + "/resources/shaders/vertexShader.spv")
                 .expect("CString::new failed");
         let fragment_shader_path =
-            CString::new(work_dir + "\\resources\\shaders\\fragmentShader.spv")
+            CString::new(work_dir + "/resources/shaders/fragmentShader.spv")
                 .expect("CString::new failed");
 
         

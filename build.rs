@@ -4,6 +4,8 @@ use std::env;
 use std::path::PathBuf;
 use std::string::String;
 
+
+
 #[cfg(target_os = "windows")]
 fn get_vulkan_sdk() -> String {
     return env!("VULKAN_SDK").to_string();
@@ -31,6 +33,7 @@ fn get_include() -> String {
 
 #[cfg(target_os = "macos")]
 fn get_include() -> String {
+    println!("cargo:rustc-link-lib=framework=QuartzCore");
     return "-I".to_owned() + &env!("VULKAN_SDK").to_string() + r#"/../MoltenVK/include"#;
 }
 
