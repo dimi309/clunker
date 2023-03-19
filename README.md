@@ -44,9 +44,6 @@ winit may launch using wayland, making winit's xlib_window() and xcb_connection(
 functions return None. The values returned by these functions are needed for creating a 
 Vulkan surface.
 
-Unfortunately, even with the abovementioned detail taken care of, the program will still
-not start successfully on Linux, as it causes a segmentation fault.
-
 ![snapshot](clunker.png)
 
 

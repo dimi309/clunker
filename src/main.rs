@@ -131,7 +131,7 @@ struct App {
     index_buffer_memory_ptr: *mut VkDeviceMemory,
 
     xcb_connx: *mut c_void,
-    xlib_win: u64,
+    xlib_win: u32,
 
 }
 
@@ -155,10 +155,12 @@ impl App {
     unsafe fn initVulkan(&self, _window: &Window) {
 	// Using the vulkan helper
 
+        let w: *mut u32 = &mut self.xlib_win.clone();
+
         let res = vh_create_instance_and_surface_linux(
             self.nameStr.as_ptr(),
             self.xcb_connx as *mut xcb_connection_t,
-            self.xlib_win as *mut xcb_window_t,
+            w,
         );
 
         if res > 0 {
@@ -206,7 +208,7 @@ impl App {
             index_buffer_memory_ptr: std::ptr::null_mut(),
 
             xcb_connx: std::ptr::null_mut(),
-            xlib_win: 0u64,
+            xlib_win: 0u32,
             
         };
 
@@ -237,7 +239,7 @@ impl App {
 
         
         myself.xcb_connx = window.xcb_connection().unwrap();
-        myself.xlib_win = window.xlib_window().unwrap();
+        myself.xlib_win = window.xlib_window().unwrap().try_into().unwrap();
 
         App::initVulkan(&myself, &window);
 
