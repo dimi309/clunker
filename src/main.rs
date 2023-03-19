@@ -7,7 +7,6 @@
 mod rectangle;
 
 use std::ffi::CString;
-//use std::os::raw::c_void;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -151,14 +150,18 @@ impl App {
         }
     }
     #[cfg(target_os = "linux")]
-    unsafe fn initVulkan(&self, _window: &Window) {
+    unsafe fn initVulkan(&self, window: &Window) {
         // Using the vulkan helper
 
-        let w: *mut u32 = &mut self.xlib_win.clone();
+        
+        let c = window.xcb_connection().unwrap();
+        let winv: u32 = window.xlib_window().unwrap().try_into().unwrap();
+
+        let w: *mut u32 = &mut winv.clone();
 
         let res = vh_create_instance_and_surface_linux(
             self.nameStr.as_ptr(),
-            self.xcb_connx as *mut xcb_connection_t,
+            c as *mut xcb_connection_t,
             w,
         );
 
@@ -203,8 +206,6 @@ impl App {
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
 
-      //      xcb_connx: std::ptr::null_mut(),
-      //      xlib_win: 0u32,
         };
 
         crate::rectangle::create_rectangle(
@@ -230,11 +231,6 @@ impl App {
                 .expect("CString::new failed");
         let fragment_shader_path = CString::new(work_dir + "/resources/shaders/fragmentShader.spv")
             .expect("CString::new failed");
-
-        //if std::env::consts::OS == "linux" {
-        //    myself.xcb_connx = window.xcb_connection().unwrap();
-        //    myself.xlib_win = window.xlib_window().unwrap().try_into().unwrap();
-        //} 
 
         App::initVulkan(&myself, &window);
 
