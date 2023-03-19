@@ -11,6 +11,21 @@ library). The vulkan_helper and the Vulkan API bindings are created during the b
 
 The code is clumsy and unsafe (I am new in crab-land) but it works.
 
+Prerequisites
+-------------
+
+- Rust
+- A C compiler (Visual Studio on Windows, gcc / clang on others)
+- The [Vulkan SDK](https://vulkan.lunarg.com/) and the`VULKAN_SDK` environment variable set to the path of the SDK
+
+On Linux, even if you are using gcc, clang also needs to be installed. 
+On Ubuntu / Debian for example that is done like this:
+
+	sudo apt-get install libclang-dev
+   
+Setup
+-----
+
 You need to execute `prepare-vulkan-helper.bat`on Windows or `prepare-vulkan-helper.sh` 
 on Linux and MacOS to build and set up the vulkan_helper library before launching cargo. 
 
@@ -24,17 +39,6 @@ using the following commands:
 
 The program runs successfully on Windows and MacOS. I am having an [issue](https://github.com/dimi309/clunker/issues/2) with
 winit on Linux.
-
-Prerequisites
--------------
-
-Rust, Visual Studio, Vulkan SDK (with the`VULKAN_SDK` environment 
-variable set to the path of the SDK)
-
-On Linux, clang needs to be installed, on Ubuntu / Debian for example
-it is done like this:
-
-   sudo apt-get install libclang-dev
 
 ![snapshot](clunker.png)
 
