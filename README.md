@@ -37,8 +37,15 @@ using the following commands:
 	git submodule init
 	git submodule update
 
-The program runs successfully on Windows and MacOS. I am having an [issue](https://github.com/dimi309/clunker/issues/2) with
-winit on Linux.
+The program runs successfully on Windows and MacOS. 
+
+On Linux, the WINIT_UNIX_BACKEND environment variable has to be set to "x11". Otherwise
+winit may launch using wayland, making winit's xlib_window() and xcb_connection() window
+functions return None. The values returned by these functions are needed for creating a 
+Vulkan surface.
+
+Unfortunately, even with the abovementioned detail taken care of, the program will still
+not start successfully on Linux, as it causes a segmentation fault.
 
 ![snapshot](clunker.png)
 

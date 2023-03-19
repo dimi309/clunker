@@ -151,12 +151,13 @@ impl App {
     #[cfg(target_os = "linux")]
     unsafe fn initVulkan(&self, window: &Window) {
 	// Using the vulkan helper
-	let w = window.xlib_window().unwrap() as *mut u32;
-	let c = window.xcb_connection().unwrap() as *mut xcb_connection_t;
+
+        let c = window.xcb_connection().unwrap();
+        let w = window.xlib_window().unwrap();
         let res = vh_create_instance_and_surface_linux(
             self.nameStr.as_ptr(),
-            c,
-            w,
+            c as *mut xcb_connection_t,
+            w as *mut u32,
         );
 
         if res > 0 {

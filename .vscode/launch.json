@@ -17,10 +17,12 @@
                 "filter": {
                     "name": "clunker",
                     "kind": "bin"
-                }
+                },
+                
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {"WINIT_UNIX_BACKEND": "x11"}
         },
         {
             "type": "lldb",
