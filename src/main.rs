@@ -7,10 +7,9 @@
 mod rectangle;
 
 use std::ffi::CString;
-use std::os::raw::c_void;
+//use std::os::raw::c_void;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
 
 use winit::{
     dpi::LogicalSize,
@@ -72,11 +71,10 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 fn main() {
-
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
-	.with_visible(true)
+        .with_visible(true)
         .with_inner_size(LogicalSize::new(SCREEN_WIDTH, SCREEN_HEIGHT))
         .build(&event_loop)
         .unwrap();
@@ -109,6 +107,8 @@ fn main() {
     });
 }
 
+
+
 struct App {
     nameStr: CString,
     pipeline_index: u32,
@@ -130,15 +130,14 @@ struct App {
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
 
-    xcb_connx: *mut c_void,
-    xlib_win: u32,
-
+    //xcb_connx: *mut c_void,
+    //xlib_win: u32,
 }
 
 impl App {
     #[cfg(target_os = "windows")]
     unsafe fn initVulkan(&self, window: &Window) {
-	// Using the vulkan helper
+        // Using the vulkan helper
         let res = vh_create_instance_and_surface_win32(
             self.nameStr.as_ptr(),
             window.hinstance() as *mut HINSTANCE__,
@@ -153,7 +152,7 @@ impl App {
     }
     #[cfg(target_os = "linux")]
     unsafe fn initVulkan(&self, _window: &Window) {
-	// Using the vulkan helper
+        // Using the vulkan helper
 
         let w: *mut u32 = &mut self.xlib_win.clone();
 
@@ -172,11 +171,8 @@ impl App {
 
     #[cfg(target_os = "macos")]
     unsafe fn initVulkan(&self, window: &Window) {
-	// Using the vulkan helper
-        let res = vh_create_instance_and_surface_macos(
-            self.nameStr.as_ptr(),
-            window.ns_view(),
-        );
+        // Using the vulkan helper
+        let res = vh_create_instance_and_surface_macos(self.nameStr.as_ptr(), window.ns_view());
 
         if res > 0 {
             println!("Vulkan instance and surface created.")
@@ -207,9 +203,8 @@ impl App {
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
 
-            xcb_connx: std::ptr::null_mut(),
-            xlib_win: 0u32,
-            
+      //      xcb_connx: std::ptr::null_mut(),
+      //      xlib_win: 0u32,
         };
 
         crate::rectangle::create_rectangle(
@@ -233,13 +228,13 @@ impl App {
         let vertex_sharder_path =
             CString::new(work_dir.clone() + "/resources/shaders/vertexShader.spv")
                 .expect("CString::new failed");
-        let fragment_shader_path =
-            CString::new(work_dir + "/resources/shaders/fragmentShader.spv")
-                .expect("CString::new failed");
+        let fragment_shader_path = CString::new(work_dir + "/resources/shaders/fragmentShader.spv")
+            .expect("CString::new failed");
 
-        
-        myself.xcb_connx = window.xcb_connection().unwrap();
-        myself.xlib_win = window.xlib_window().unwrap().try_into().unwrap();
+        //if std::env::consts::OS == "linux" {
+        //    myself.xcb_connx = window.xcb_connection().unwrap();
+        //    myself.xlib_win = window.xlib_window().unwrap().try_into().unwrap();
+        //} 
 
         App::initVulkan(&myself, &window);
 
@@ -422,12 +417,7 @@ impl App {
         let mut image_index = 0;
         let img_ptr: *mut u32 = &mut image_index;
 
-
-        vh_acquire_next_image(
-            self.pipeline_index,
-            img_ptr,
-            cfi_ptr,
-        );
+        vh_acquire_next_image(self.pipeline_index, img_ptr, cfi_ptr);
         vh_wait_gpu_cpu_fence(current_frame_index);
 
         let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[current_frame_index as usize];
