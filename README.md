@@ -11,6 +11,8 @@ library). The vulkan_helper and the Vulkan API bindings are created during the b
 
 The code is clumsy and unsafe (I am new in crab-land) but it works.
 
+![clunker](clunker-logo.png)
+
 Prerequisites
 -------------
 
