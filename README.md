@@ -18,6 +18,7 @@ Prerequisites
 
 - Rust
 - A C compiler (Visual Studio on Windows, gcc / clang on others)
+- CMake
 - The [Vulkan SDK](https://vulkan.lunarg.com/) and the`VULKAN_SDK` environment variable set to the path of the SDK
 
 On Linux, even if you are using gcc, clang also needs to be installed. 
