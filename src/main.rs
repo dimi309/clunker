@@ -129,8 +129,6 @@ struct App {
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
 
-    //xcb_connx: *mut c_void,
-    //xlib_win: u32,
 }
 
 impl App {
