@@ -1,15 +1,15 @@
 Clunker
 =======
 
-This is my first ever experiment with the Rust language. It is basically a program, 
-written in Rust, which draws a box using the Vulkan API. 
+This is an experiment with the Rust language. It is basically a program, written in Rust, which 
+draws a box using the Vulkan API. It runs on Windows, Linux and MacOS.
 
 I am not using ash or any other Vulkan-wrapping crate. I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with Rust
 (vulkan_helper is also used by the [small3d](https://github.com/dimi309/small3d) game development
 library). The vulkan_helper and the Vulkan API bindings are created during the build with bindgen.
 
-The code is clumsy and unsafe (I am new in crab-land) but it works.
+The code is probably clumsy and certainly unsafe, but it works.
 
 ![clunker](clunker-logo.png)
 
@@ -39,8 +39,6 @@ using the following commands:
 	
 	git submodule init
 	git submodule update
-
-The program runs successfully on Windows and MacOS. 
 
 On Linux, the WINIT_UNIX_BACKEND environment variable has to be set to "x11". Otherwise
 winit may launch using wayland, making winit's xlib_window() and xcb_connection() window
