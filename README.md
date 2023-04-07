@@ -6,8 +6,9 @@ draws a box using the Vulkan API. It runs on Windows, Linux and MacOS.
 
 I am not using ash or any other Vulkan-wrapping crate. I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with Rust
-(vulkan_helper is also used by the [small3d](https://github.com/dimi309/small3d) game development
-library). The vulkan_helper and the Vulkan API bindings are created during the build with bindgen.
+(vulkan_helper was also used by the [small3d](https://github.com/dimi309/small3d) game development
+library [once upon a time](https://github.com/dimi309/small3d/releases/tag/1.8015.last.vulkan)). 
+The vulkan_helper and the Vulkan API bindings are created during the build with bindgen.
 
 The code is probably clumsy and certainly unsafe, but it works.
 
