@@ -21,11 +21,23 @@ Prerequisites
 - A C compiler (Visual Studio on Windows, gcc / clang on others)
 - CMake
 - The [Vulkan SDK](https://vulkan.lunarg.com/) and the`VULKAN_SDK` environment variable set to the path of the SDK
+- clang
 
 On Linux, even if you are using gcc, clang also needs to be installed. 
 On Ubuntu / Debian for example that is done like this:
 
 	sudo apt-get install libclang-dev
+
+On windows you can download a prebuilt binary from here for example:
+
+https://github.com/llvm/llvm-project/releases/tag/llvmorg-17.0.1
+
+Try 
+
+LLVM-17.0.1-win64.exe
+
+... and set LIBCLANG_PATH environment variable to the installed binary
+directory, for example `D:\llvm17\LLVM\bin`.
    
 Setup
 -----
