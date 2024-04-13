@@ -30,10 +30,6 @@ const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const SCREEN_WIDTH: u32 = 1024;
 const SCREEN_HEIGHT: u32 = 768;
 
-static mut vertexData: [f32; 16] = [0f32; 16];
-static mut indexData: [u32; 6] = [0u32; 6];
-static mut textureCoordsData: [f32; 8] = [0f32; 8];
-
 static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {
     binding: 0,
     stride: 4u32 * (std::mem::size_of::<f32>() as u32),
@@ -199,19 +195,15 @@ impl App {
             index_buffer_memory_ptr: std::ptr::null_mut(),
         };
 
-        unsafe {
-            crate::rectangle::create_rectangle(
+        let (vertexData, indexData, textureCoordsData) = crate::rectangle::create_rectangle (
                 -0.5,
                 -0.5,
                 0.0,
                 0.5,
                 0.5,
-                0.0,
-                &mut vertexData,
-                &mut indexData,
-                &mut textureCoordsData,
-            );
-        }
+                0.0);
+
+        
 
         let work_dir = std::env::current_dir()
             .unwrap()
@@ -308,7 +300,7 @@ impl App {
                 staging_data_ptr,
             );
 
-            let src_ptr = &mut vertexData as *const f32;
+            let src_ptr = &vertexData as *const f32;
 
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
@@ -378,7 +370,7 @@ impl App {
                 staging_data_ptr,
             );
 
-            let src_ptr = &mut indexData as *const u32;
+            let src_ptr = &indexData as *const u32;
 
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
