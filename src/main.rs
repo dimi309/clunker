@@ -5,6 +5,7 @@
 #![allow(unused_assignments)]
 
 mod rectangle;
+mod model;
 
 use std::ffi::CString;
 use std::ptr::addr_of;
@@ -196,7 +197,7 @@ impl App {
             index_buffer_memory_ptr: std::ptr::null_mut(),
         };
 
-        let (vertexData, indexData, _textureCoordsData) = crate::rectangle::create_rectangle (
+        let m = crate::rectangle::create_rectangle (
                 -0.5,
                 -0.5,
                 0.0,
@@ -299,7 +300,7 @@ impl App {
                 staging_data_ptr,
             );
 
-            let src_ptr = &vertexData as *const f32;
+            let src_ptr = m.vertexData.as_ptr() as *const f32;
 
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
@@ -369,7 +370,7 @@ impl App {
                 staging_data_ptr,
             );
 
-            let src_ptr = &indexData as *const u32;
+            let src_ptr = m.indexData.as_ptr() as *const u32;
 
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
