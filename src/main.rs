@@ -7,6 +7,7 @@
 mod rectangle;
 
 use std::ffi::CString;
+use std::ptr::addr_of;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
@@ -51,8 +52,8 @@ unsafe extern "C" fn set_input_state_callback(
 
     (*inputStateCreateInfo).vertexBindingDescriptionCount = 1;
     (*inputStateCreateInfo).vertexAttributeDescriptionCount = 1;
-    (*inputStateCreateInfo).pVertexBindingDescriptions = &binding_desc;
-    (*inputStateCreateInfo).pVertexAttributeDescriptions = &attrib_desc;
+    (*inputStateCreateInfo).pVertexBindingDescriptions = addr_of!(binding_desc);
+    (*inputStateCreateInfo).pVertexAttributeDescriptions = addr_of!(attrib_desc);
     1
 }
 
@@ -195,15 +196,13 @@ impl App {
             index_buffer_memory_ptr: std::ptr::null_mut(),
         };
 
-        let (vertexData, indexData, textureCoordsData) = crate::rectangle::create_rectangle (
+        let (vertexData, indexData, _textureCoordsData) = crate::rectangle::create_rectangle (
                 -0.5,
                 -0.5,
                 0.0,
                 0.5,
                 0.5,
                 0.0);
-
-        
 
         let work_dir = std::env::current_dir()
             .unwrap()
