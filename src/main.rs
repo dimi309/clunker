@@ -7,8 +7,6 @@
 mod rectangle;
 mod model;
 
-mod GlbFile;
-
 use std::ffi::CString;
 use std::ptr::addr_of;
 
