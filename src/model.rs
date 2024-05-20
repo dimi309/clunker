@@ -33,12 +33,24 @@ impl Model {
                     let vertexSlice =
                         &self.buffers[posView.index()][posView.offset()..posView.offset() + posView.length()];
 
-                    self.vertexData = vertexSlice
+                    let vertexDataTmp : Vec<f32> = vertexSlice
                         .chunks_exact(4)
                         .map(TryInto::try_into)
                         .map(Result::unwrap)
                         .map(f32::from_le_bytes)
                         .collect();
+
+                    let mut counter = 0;
+                
+
+                    for vt in vertexDataTmp {
+                        self.vertexData.push(vt);
+                        counter = counter + 1;
+                        if counter == 3 {
+                            self.vertexData.push(1f32);
+                            counter = 0;
+                        }
+                    }
 
                     let ind = &b[0].indices().expect("No indices index found");
                     assert!(5123 == ind.data_type().as_gl_enum()); // unsigned short (2)
