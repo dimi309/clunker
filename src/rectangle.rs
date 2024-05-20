@@ -15,7 +15,7 @@ pub fn create_rectangle (
     let indexData: [u32; 6] = [0, 1, 2, 2, 3, 0];
     let textureCoordsData: [f32; 8] = [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0];
     
-    let m = Model {vertexData: vertexData.to_vec(), indexData: indexData.to_vec(), textureCoordsData: textureCoordsData.to_vec()};
+    let m = Model {vertexData: vertexData.to_vec(), indexData: indexData.to_vec(), textureCoordsData: textureCoordsData.to_vec(), ..Default::default()};
 
     return m;
 

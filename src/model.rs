@@ -5,6 +5,8 @@ pub struct Model {
 	pub vertexData: Vec<f32>,
 	pub indexData: Vec<u32>,
 	pub textureCoordsData: Vec<f32>,
+	pub buffers: Vec<gltf::buffer::Data>,
+	pub images: Vec<gltf::image::Data>,
 }
 
 
@@ -27,7 +29,9 @@ impl Model {
 				if b.len() > 0 {
 					let c = b[0].get(&gltf::Semantic::Positions).expect("no positions");
 					println!("GL datatype {}", c.data_type().as_gl_enum());
-					let d = c.view();
+					let d = c.view().expect("Could not find view");
+
+					
 					
 				}
 			}
@@ -35,9 +39,13 @@ impl Model {
 		}
 	}
 
-	pub fn load(&self) {
+	pub fn load(&mut self) {
 
-		let (document, buffers, images) = gltf::import("goat.glb").expect("Error while importing document, buffers and images");
+		let (document, buffers1, images1) = gltf::import("goat.glb").expect("Error while importing document, buffers and images");
+		self.buffers = buffers1;
+		self.images = images1;
+
+		
 
         for a in document.meshes() {
             println!("Mesh: {}", a.name().expect("Could not find mesh name"));
