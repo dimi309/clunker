@@ -205,6 +205,11 @@ impl App {
                 0.5,
                 0.0);
 
+        let mut m2 = model::Model { ..Default::default() };
+
+        m2.load();
+
+
         let work_dir = std::env::current_dir()
             .unwrap()
             .to_str()
