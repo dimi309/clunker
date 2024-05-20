@@ -197,17 +197,17 @@ impl App {
             index_buffer_memory_ptr: std::ptr::null_mut(),
         };
 
-        let m = crate::rectangle::create_rectangle (
+        /*let m = crate::rectangle::create_rectangle (
                 -0.5,
                 -0.5,
                 0.0,
                 0.5,
                 0.5,
                 0.0);
+*/
+        let mut m = model::Model { ..Default::default() };
 
-        let mut m2 = model::Model { ..Default::default() };
-
-        m2.load();
+        m.load("goat.glb");
 
 
         let work_dir = std::env::current_dir()
