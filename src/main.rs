@@ -4,8 +4,8 @@
 #![allow(non_snake_case)]
 #![allow(unused_assignments)]
 
-mod rectangle;
 mod model;
+mod rectangle;
 
 use std::ffi::CString;
 use std::ptr::addr_of;
@@ -122,6 +122,8 @@ struct App {
     index_buffer_ptr: *mut VkBuffer,
     index_buffer_memory: VkDeviceMemory,
     index_buffer_memory_ptr: *mut VkDeviceMemory,
+
+    indexDataSize: u32,
 }
 
 impl App {
@@ -195,20 +197,23 @@ impl App {
             index_buffer_ptr: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
+
+            indexDataSize: 0
         };
 
         /*let m = crate::rectangle::create_rectangle (
-                -0.5,
-                -0.5,
-                0.0,
-                0.5,
-                0.5,
-                0.0);
-*/
-        let mut m = model::Model { ..Default::default() };
+                        -0.5,
+                        -0.5,
+                        0.0,
+                        0.5,
+                        0.5,
+                        0.0);
+        */
+        let mut m = model::Model {
+            ..Default::default()
+        };
 
         m.load("goat.glb");
-
 
         let work_dir = std::env::current_dir()
             .unwrap()
@@ -258,13 +263,17 @@ impl App {
             myself.vertex_buffer_ptr = &mut myself.vertex_buffer;
             myself.vertex_buffer_memory_ptr = &mut myself.vertex_buffer_memory;
 
+            let vertexDataSize = m.vertexData.len();
+
             if vh_create_buffer(
                 myself.vertex_buffer_ptr,
                 (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                     .try_into()
                     .unwrap(),
-                16u32 * (std::mem::size_of::<f32>() as u32),
+                (vertexDataSize * std::mem::size_of::<f32>())
+                    .try_into()
+                    .unwrap(),
                 myself.vertex_buffer_memory_ptr,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
@@ -282,7 +291,9 @@ impl App {
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
-                16u32 * (std::mem::size_of::<f32>() as u32),
+                (vertexDataSize * std::mem::size_of::<f32>())
+                    .try_into()
+                    .unwrap(),
                 myself.staging_buffer_memory_ptr,
                 (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
@@ -310,7 +321,7 @@ impl App {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
-                16usize * std::mem::size_of::<f32>(),
+                vertexDataSize * std::mem::size_of::<f32>(),
             );
 
             vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
@@ -318,7 +329,9 @@ impl App {
             vh_copy_buffer(
                 myself.staging_buffer,
                 myself.vertex_buffer,
-                16u64 * (std::mem::size_of::<f32>() as u64),
+                (vertexDataSize * std::mem::size_of::<f32>())
+                    .try_into()
+                    .unwrap(),
             );
 
             vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
@@ -332,7 +345,9 @@ impl App {
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                     .try_into()
                     .unwrap(),
-                6u32 * (std::mem::size_of::<u32>() as u32),
+                (vertexDataSize * std::mem::size_of::<u32>())
+                    .try_into()
+                    .unwrap(),
                 myself.index_buffer_memory_ptr,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
@@ -347,12 +362,17 @@ impl App {
             myself.staging_buffer_memory = std::ptr::null_mut();
             myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
 
+            let indexDataSize = m.indexData.len();
+            myself.indexDataSize = indexDataSize.try_into().unwrap();
+
             if vh_create_buffer(
                 myself.staging_buffer_ptr,
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
-                6u32 * (std::mem::size_of::<u32>() as u32),
+                (indexDataSize * std::mem::size_of::<u32>())
+                    .try_into()
+                    .unwrap(),
                 myself.staging_buffer_memory_ptr,
                 (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
@@ -380,7 +400,9 @@ impl App {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
-                6usize * std::mem::size_of::<u32>(),
+                (indexDataSize * std::mem::size_of::<u32>())
+                    .try_into()
+                    .unwrap(),
             );
 
             vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
@@ -388,7 +410,9 @@ impl App {
             vh_copy_buffer(
                 myself.staging_buffer,
                 myself.index_buffer,
-                6u64 * (std::mem::size_of::<u32>() as u64),
+                (indexDataSize * std::mem::size_of::<u32>())
+                    .try_into()
+                    .unwrap(),
             );
 
             vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
@@ -421,7 +445,7 @@ impl App {
                     0,
                     VkIndexType_VK_INDEX_TYPE_UINT32,
                 );
-                vkCmdDrawIndexed(*cb_ptr, 6, 1, 0, 0, 0);
+                vkCmdDrawIndexed(*cb_ptr, self.indexDataSize, 1, 0, 0, 0);
                 vh_end_draw_command_buffer(cb_ptr);
             }
 
