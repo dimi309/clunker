@@ -12,7 +12,7 @@ pub struct Model {
 
 impl Model {
 
-	fn parse_children(ref node: gltf::Node) {
+	fn parse_children(&mut self, ref node: gltf::Node) {
 		for child in node.children() {
 			println!(
 				"Node #{} has {} children, name {}",
@@ -31,11 +31,11 @@ impl Model {
 					println!("GL datatype {}", c.data_type().as_gl_enum());
 					let d = c.view().expect("Could not find view");
 
-					
-					
+					let slice = &self.buffers[0][d.offset()..d.length()];
+					let x = slice[0].clone();
 				}
 			}
-			Self::parse_children(child);
+			self.parse_children(child);
 		}
 	}
 
@@ -59,7 +59,7 @@ impl Model {
                     node.children().count(),
                     node.name().unwrap_or_default()
                 );
-                Self::parse_children(node);
+                self.parse_children(node);
             }
         }
 	}
