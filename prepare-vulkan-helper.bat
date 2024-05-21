@@ -12,6 +12,11 @@ xcopy include ..\..\include /i /s /y
 xcopy lib ..\..\lib /i /s /y
 cd ..\..
 
+cd resources\shaders
+glslangValidator -V fragmentShader.frag -o fragmentShader.spv
+glslangValidator -V vertexShader.vert -o vertexShader.spv
+cd ..\..
+
 mkdir target\debug
 xcopy resources target\debug\resources /i /s /y
 mkdir target\release
