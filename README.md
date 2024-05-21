@@ -2,8 +2,8 @@ Clunker
 =======
 
 This is an experiment with the Rust language. It is basically a program, written 
-in Rust, which loads a gltf file and renders it using the  Vulkan API. It runs on Windows, 
-Linux and MacOS.
+in Rust, which loads a model from a .glb (gltf) file and renders it using the
+Vulkan API. It runs on Windows, Linux and MacOS.
 
 I am not using ash or any other Vulkan-wrapping crate. I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with 
