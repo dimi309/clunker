@@ -5,7 +5,6 @@
 #![allow(unused_assignments)]
 
 mod model;
-mod rectangle;
 
 use std::ffi::CString;
 use std::ptr::addr_of;
@@ -198,17 +197,9 @@ impl App {
             index_buffer_memory: std::ptr::null_mut(),
             index_buffer_memory_ptr: std::ptr::null_mut(),
 
-            indexDataSize: 0
+            indexDataSize: 0,
         };
 
-        /*let m = crate::rectangle::create_rectangle (
-                        -0.5,
-                        -0.5,
-                        0.0,
-                        0.5,
-                        0.5,
-                        0.0);
-        */
         let mut m = model::Model {
             ..Default::default()
         };
@@ -339,13 +330,16 @@ impl App {
             myself.index_buffer_ptr = &mut myself.index_buffer;
             myself.index_buffer_memory_ptr = &mut myself.index_buffer_memory;
 
+            let indexDataSize = m.indexData.len();
+            myself.indexDataSize = indexDataSize.try_into().unwrap();
+
             if vh_create_buffer(
                 myself.index_buffer_ptr,
                 (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                     .try_into()
                     .unwrap(),
-                (vertexDataSize * std::mem::size_of::<u32>())
+                (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
                 myself.index_buffer_memory_ptr,
@@ -362,15 +356,12 @@ impl App {
             myself.staging_buffer_memory = std::ptr::null_mut();
             myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
 
-            let indexDataSize = m.indexData.len();
-            myself.indexDataSize = indexDataSize.try_into().unwrap();
-
             if vh_create_buffer(
                 myself.staging_buffer_ptr,
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
-                (indexDataSize * std::mem::size_of::<u32>())
+                (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
                 myself.staging_buffer_memory_ptr,
@@ -400,7 +391,7 @@ impl App {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
-                (indexDataSize * std::mem::size_of::<u32>())
+                (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
             );
@@ -410,7 +401,7 @@ impl App {
             vh_copy_buffer(
                 myself.staging_buffer,
                 myself.index_buffer,
-                (indexDataSize * std::mem::size_of::<u32>())
+                (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
             );
@@ -443,7 +434,7 @@ impl App {
                     *cb_ptr,
                     self.index_buffer,
                     0,
-                    VkIndexType_VK_INDEX_TYPE_UINT32,
+                    VkIndexType_VK_INDEX_TYPE_UINT16,
                 );
                 vkCmdDrawIndexed(*cb_ptr, self.indexDataSize, 1, 0, 0, 0);
                 vh_end_draw_command_buffer(cb_ptr);

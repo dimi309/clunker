@@ -3,7 +3,7 @@ use gltf::Gltf;
 #[derive(Default)]
 pub struct Model {
     pub vertexData: Vec<f32>,
-    pub indexData: Vec<u32>,
+    pub indexData: Vec<u16>,
     pub textureCoordsData: Vec<f32>,
     
     pub buffers: Vec<gltf::buffer::Data>,
@@ -41,14 +41,17 @@ impl Model {
                         .collect();
 
                     let mut counter = 0;
-                
 
                     for vt in vertexDataTmp {
-                        self.vertexData.push(vt);
+                        
                         counter = counter + 1;
                         if counter == 3 {
+                            self.vertexData.push(vt + 0.5);
                             self.vertexData.push(1f32);
                             counter = 0;
+                        }
+                        else {
+                            self.vertexData.push(vt / 2.0);
                         }
                     }
 
@@ -59,14 +62,13 @@ impl Model {
 
 					let indexSlice = &self.buffers[posView.index()][indexView.offset()..indexView.offset() + indexView.length()];
 
-					let uidx: Vec<u16> = indexSlice
+					self.indexData = indexSlice
                         .chunks_exact(2)
                         .map(TryInto::try_into)
                         .map(Result::unwrap)
                         .map(u16::from_le_bytes)
                         .collect();
-
-                    self.indexData = uidx.into_iter().map(|x| x as u32).collect();
+                     
                 }
             }
             self.parse_children(child);
