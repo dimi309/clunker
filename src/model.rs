@@ -1,5 +1,3 @@
-use gltf::Gltf;
-
 #[derive(Default)]
 pub struct Model {
     pub vertexData: Vec<f32>,

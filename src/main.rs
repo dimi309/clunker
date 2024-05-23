@@ -448,8 +448,8 @@ impl App {
 
     fn destroy(&mut self) {
         unsafe {
+            vkDeviceWaitIdle(vh_logical_device);
             for idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
-                vh_wait_gpu_cpu_fence(idx.try_into().unwrap());
                 let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
                 vh_destroy_draw_command_buffer(cb_p);
             }
@@ -460,6 +460,7 @@ impl App {
 
             vh_destroy_swapchain();
             vh_destroy_sync_objects();
+            vkDestroySurfaceKHR(vh_instance, vh_surface, std::ptr::null_mut());
             vh_shutdown()
         };
     }
