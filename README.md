@@ -1,16 +1,36 @@
 Clunker
 =======
 
-This is an experiment with the Rust language. It is basically a program, written 
-in Rust, which loads a model from a .glb (gltf) file and renders it using the
-Vulkan API. It runs on Windows, Linux and MacOS.
+The purpose of this project is to serve as a boilerplate for creating 
+cross-platform games and graphical applications running on Vulkan, 
+using the Rust programming language and only a small set of dependencies. 
+The project provides bindings for the Vulkan API, also taking care of some of 
+the Vulkan setup busywork and ensuring cross-platform compatibility, 
+as it runs on Windows, Linux and MacOS.
 
 I am not using ash or any other Vulkan-wrapping crate. I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with 
-Rust (vulkan_helper was also used by the [small3d](https://github.com/dimi309/small3d) game development
+Rust (vulkan_helper was also used by my [small3d](https://github.com/dimi309/small3d) game development
 library [once upon a time](https://github.com/dimi309/small3d/releases/tag/1.8015.last.vulkan)). 
 The vulkan_helper and the Vulkan API bindings are created during the build with 
-bindgen.
+bindgen. It is because of the existence of this C - Rust interface that
+I have called the project "Clunker", like an old customised car :) 
+
+No additional features will be added, only bug fixes and adaptations,
+ever-increasing the project's robustness and safety level.
+
+The project is basically a program, written in Rust, which loads a model of a
+goat from a .glb (gltf) file and renders it using the Vulkan API. The goat
+is very basic and so are the shaders. I just clone the codebase and
+use it as a starting point for other projects, thus adhering to the 
+["Write Games, Not Engines" principle](https://geometrian.com/programming/tutorials/write-games-not-engines/).
+
+Having developed the small3d game development library (C++) in the past and
+having made some games with it, I have now decided to migrate to this more 
+"ad hoc" way of development which I hope will lead to more creativity and fewer 
+constraints. I find that once a library or game engine is built one is forced to 
+conform to its rules. Maybe it is better to just go back to coding games 
+directly, case by case.
 
 ![clunker](clunker-logo.png)
 

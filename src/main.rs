@@ -95,7 +95,7 @@ fn main() {
             Event::MainEventsCleared => {
                 window.request_redraw();
             }
-            Event::RedrawRequested(_) => {}
+            Event::RedrawRequested(_) => (),
             _ => (),
         }
     });
