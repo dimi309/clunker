@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 winit="0.28.2"
-nalgebra-glm="0.18.0"
 gltf = "1.4.0"
 
 [build-dependencies]
