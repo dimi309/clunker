@@ -2,8 +2,8 @@ Clunker
 =======
 
 Boilerplate for creating cross-platform games and graphical applications running 
-on Vulkan, using the Rust programming language and only a small set of 
-dependencies. The project provides bindings for the Vulkan API, also taking care 
+on **Vulkan**, using the **Rust programming language and only a small set of 
+dependencies**. The project provides bindings for the Vulkan API, also taking care 
 of some of the Vulkan setup busywork and ensuring cross-platform compatibility, 
 as it **runs on Windows, Linux and MacOS**.
 
@@ -20,8 +20,8 @@ goat from a .glb (gltf) file and renders it using the Vulkan API. The goat
 is very basic and so are the shaders. I just clone the codebase and
 use it as a starting point for other projects.
 
-**No additional features will be added, only bug fixes and adaptations,
-ever-increasing the project's robustness and safety level.**
+**No additional features will be added, only bug fixes and adaptations
+improving the project's robustness and safety.**
 
 ![clunker](clunker-logo.png)
 
