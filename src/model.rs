@@ -29,7 +29,7 @@ impl Model {
                     let posView = pos.view().expect("Could not find positions view");
 
                     let vertexSlice =
-                        &self.buffers[posView.index()][posView.offset()..posView.offset() + posView.length()];
+                        &self.buffers[posView.buffer().index()][posView.offset()..posView.offset() + posView.length()];
 
                     let vertexDataTmp : Vec<f32> = vertexSlice
                         .chunks_exact(4)
@@ -58,7 +58,7 @@ impl Model {
 
                     let indexView = ind.view().expect("View not found");
 
-					let indexSlice = &self.buffers[posView.index()][indexView.offset()..indexView.offset() + indexView.length()];
+					let indexSlice = &self.buffers[indexView.buffer().index()][indexView.offset()..indexView.offset() + indexView.length()];
 
 					self.indexData = indexSlice
                         .chunks_exact(2)
