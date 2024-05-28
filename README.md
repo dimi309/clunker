@@ -20,9 +20,6 @@ goat from a .glb (gltf) file and renders it using the Vulkan API. The goat
 is very basic and so are the shaders. I just clone the codebase and
 use it as a starting point for other projects.
 
-**No additional features will be added, only bug fixes and adaptations
-improving the project's robustness and safety.**
-
 ![clunker](clunker-logo.png)
 
 Prerequisites
