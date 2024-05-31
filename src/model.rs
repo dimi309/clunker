@@ -2,25 +2,17 @@
 pub struct Model {
     pub vertexData: Vec<f32>,
     pub indexData: Vec<u16>,
-    pub textureCoordsData: Vec<f32>,
-    
-    pub buffers: Vec<gltf::buffer::Data>,
-    pub images: Vec<gltf::image::Data>,
 }
 
 impl Model {
-    fn parse_children(&mut self, ref node: gltf::Node) {
-        for child in node.children() {
-            println!(
-                "Node #{} has {} children, name {}",
-                child.index(),
-                child.children().count(),
-                child.name().unwrap_or_default()
-            );
+    
+    pub fn load(&mut self, filepath: &str) {
+        let (document, buffers, _) =
+            gltf::import(filepath).expect("Error while importing document, buffers and images");
 
-            if child.mesh().is_some() {
-                println!("It's a mesh!!");
-                let a = child.mesh().unwrap();
+        if document.meshes().count() > 0 {
+
+            let a = document.meshes().nth(0).expect("Could not retrieve mesh.");
                 let b: Vec<gltf::Primitive> = a.primitives().collect();
 
                 if b.len() > 0 {
@@ -29,7 +21,7 @@ impl Model {
                     let posView = pos.view().expect("Could not find positions view");
 
                     let vertexSlice =
-                        &self.buffers[posView.buffer().index()][posView.offset()..posView.offset() + posView.length()];
+                        &buffers[posView.buffer().index()][posView.offset()..posView.offset() + posView.length()];
 
                     let vertexDataTmp : Vec<f32> = vertexSlice
                         .chunks_exact(4)
@@ -58,7 +50,7 @@ impl Model {
 
                     let indexView = ind.view().expect("View not found");
 
-					let indexSlice = &self.buffers[indexView.buffer().index()][indexView.offset()..indexView.offset() + indexView.length()];
+					let indexSlice = &buffers[indexView.buffer().index()][indexView.offset()..indexView.offset() + indexView.length()];
 
 					self.indexData = indexSlice
                         .chunks_exact(2)
@@ -68,31 +60,8 @@ impl Model {
                         .collect();
                      
                 }
-            }
-            self.parse_children(child);
-        }
-    }
 
-    pub fn load(&mut self, filepath: &str) {
-        let (document, buffers1, images1) =
-            gltf::import(filepath).expect("Error while importing document, buffers and images");
-        self.buffers = buffers1;
-        self.images = images1;
-
-        for a in document.meshes() {
-            println!("Mesh: {}", a.name().expect("Could not find mesh name"));
         }
-
-        for scene in document.scenes() {
-            for node in scene.nodes() {
-                println!(
-                    "Node #{} has {} children, name {}",
-                    node.index(),
-                    node.children().count(),
-                    node.name().unwrap_or_default()
-                );
-                self.parse_children(node);
-            }
-        }
+       
     }
 }
