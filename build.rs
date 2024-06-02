@@ -4,8 +4,6 @@ use std::env;
 use std::path::PathBuf;
 use std::string::String;
 
-
-
 #[cfg(target_os = "windows")]
 fn get_vulkan_sdk() -> String {
     return env!("VULKAN_SDK").to_string();
@@ -23,7 +21,7 @@ fn get_vulkan_sdk() -> String {
 
 #[cfg(target_os = "windows")]
 fn get_include() -> String {
-    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() +  r#"/include"#;
+    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() + r#"/include"#;
 }
 
 #[cfg(target_os = "linux")]
@@ -38,7 +36,6 @@ fn get_include() -> String {
 }
 
 fn main() {
-
     // env::var runs at runtime
     // env! runs at compile time
     let vulkan_sdk = get_vulkan_sdk();
@@ -49,11 +46,11 @@ fn main() {
     println!("cargo:rustc-link-lib=vulkan_helper");
 
     if cfg!(windows) {
-	println!("cargo:rustc-link-lib=vulkan-1");
-	println!("cargo:rerun-if-changed=wrapper_win32.h");
+        println!("cargo:rustc-link-lib=vulkan-1");
+        println!("cargo:rerun-if-changed=wrapper_win32.h");
     } else {
-	println!("cargo:rustc-link-lib=vulkan");
-	println!("cargo:rerun-if-changed=wrapper.h");
+        println!("cargo:rustc-link-lib=vulkan");
+        println!("cargo:rerun-if-changed=wrapper.h");
     }
 
     let bindings = bindgen::Builder::default()
@@ -69,10 +66,8 @@ fn main() {
         .generate()
         .expect("Unable to generate bindings");
 
-
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
-    
 }
