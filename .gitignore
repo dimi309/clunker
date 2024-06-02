@@ -7,4 +7,5 @@
 \.\#*
 .vs
 *.spv
-/.zed
+.zed
+.vscode
