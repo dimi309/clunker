@@ -127,22 +127,24 @@ struct App {
 
 impl App {
     #[cfg(target_os = "windows")]
-    unsafe fn initVulkan(&self, window: &Window) {
+    fn initVulkan(&self, window: &Window) {
         // Using the vulkan helper
-        let res = vh_create_instance_and_surface_win32(
-            self.nameStr.as_ptr(),
-            window.hinstance() as *mut HINSTANCE__,
-            window.hwnd() as *mut HWND__,
-        );
+        unsafe {
+            let res = vh_create_instance_and_surface_win32(
+                self.nameStr.as_ptr(),
+                window.hinstance() as *mut HINSTANCE__,
+                window.hwnd() as *mut HWND__,
+            );
 
-        if res > 0 {
-            println!("Vulkan instance and surface created.")
-        } else {
-            panic!("Vulkan instance and surface creation has failed.");
+            if res > 0 {
+                println!("Vulkan instance and surface created.")
+            } else {
+                panic!("Vulkan instance and surface creation has failed.");
+            }
         }
     }
     #[cfg(target_os = "linux")]
-    unsafe fn initVulkan(&self, window: &Window) {
+    fn initVulkan(&self, window: &Window) {
         // Using the vulkan helper
 
         let c = window.xcb_connection().unwrap();
@@ -150,28 +152,32 @@ impl App {
 
         let w: *mut u32 = &mut winv.clone();
 
-        let res = vh_create_instance_and_surface_linux(
-            self.nameStr.as_ptr(),
-            c as *mut xcb_connection_t,
-            w,
-        );
+        unsafe {
+            let res = vh_create_instance_and_surface_linux(
+                self.nameStr.as_ptr(),
+                c as *mut xcb_connection_t,
+                w,
+            );
 
-        if res > 0 {
-            println!("Vulkan instance and surface created.")
-        } else {
-            panic!("Vulkan instance and surface creation has failed.");
+            if res > 0 {
+                println!("Vulkan instance and surface created.")
+            } else {
+                panic!("Vulkan instance and surface creation has failed.");
+            }
         }
     }
 
     #[cfg(target_os = "macos")]
-    unsafe fn initVulkan(&self, window: &Window) {
+    fn initVulkan(&self, window: &Window) {
         // Using the vulkan helper
-        let res = vh_create_instance_and_surface_macos(self.nameStr.as_ptr(), window.ns_view());
+        unsafe {
+            let res = vh_create_instance_and_surface_macos(self.nameStr.as_ptr(), window.ns_view());
 
-        if res > 0 {
-            println!("Vulkan instance and surface created.")
-        } else {
-            panic!("Vulkan instance and surface creation has failed.");
+            if res > 0 {
+                println!("Vulkan instance and surface created.")
+            } else {
+                panic!("Vulkan instance and surface creation has failed.");
+            }
         }
     }
 
