@@ -32,7 +32,7 @@ fn get_include() -> String {
 #[cfg(target_os = "macos")]
 fn get_include() -> String {
     println!("cargo:rustc-link-lib=framework=QuartzCore");
-    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() + r#"/../MoltenVK/include"#;
+    return "-I".to_owned() + &env!("VULKAN_SDK").to_string() + r#"/include"#;
 }
 
 fn main() {
