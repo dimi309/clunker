@@ -76,6 +76,10 @@ fn main() {
         .unwrap();
 
     let mut app = App::create(&window);
+
+    app.real_screen_width = SCREEN_WIDTH;
+    app.real_screen_height = SCREEN_HEIGHT;
+
     let mut destroying = false;
 
     event_loop.run(move |event, _, control_flow| {
@@ -86,11 +90,31 @@ fn main() {
 
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
-                ..
+                .. // ignore WindowId
             } => {
                 destroying = true;
                 control_flow.set_exit();
                 app.destroy();
+            }
+            Event::WindowEvent {
+                event: WindowEvent::Resized(newSize),
+                .. // ignore WindowId
+                
+            } => {
+
+                unsafe {
+                    app.real_screen_width = newSize.width;
+                    app.real_screen_height = newSize.height;
+                    if app.real_screen_width == 0 { 
+                        app.real_screen_width = 1 
+                    };
+                    if app.real_screen_height == 0 { 
+                        app.real_screen_height = 1 
+                    };
+                    vh_set_width_height(app.real_screen_width, app.real_screen_height);
+                    vh_recreate_pipelines_and_swapchain();
+                }
+
             }
             Event::MainEventsCleared => {
                 window.request_redraw();
@@ -104,6 +128,9 @@ fn main() {
 struct App {
     nameStr: CString,
     pipeline_index: u32,
+
+    real_screen_width: u32,
+    real_screen_height: u32,
 
     vertex_buffer: VkBuffer,
     vertex_buffer_ptr: *mut VkBuffer,
@@ -185,6 +212,9 @@ impl App {
         let mut myself = Self {
             nameStr: CString::new("Hello Rust").expect("CString::new failed"),
             pipeline_index: 100,
+
+            real_screen_width: SCREEN_WIDTH,
+            real_screen_height: SCREEN_HEIGHT,
 
             vertex_buffer: std::ptr::null_mut(),
             vertex_buffer_ptr: std::ptr::null_mut(),
@@ -430,24 +460,31 @@ impl App {
 
             let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[current_frame_index as usize];
 
-            if *cb_ptr == std::ptr::null_mut() {
-                vh_begin_draw_command_buffer(cb_ptr);
-                let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
-                vh_bind_pipeline_to_command_buffer(self.pipeline_index, cb_cptr);
-                let binding: VkDeviceSize = 0;
-                vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &self.vertex_buffer, &binding);
-                vkCmdBindIndexBuffer(
-                    *cb_ptr,
-                    self.index_buffer,
-                    0,
-                    VkIndexType_VK_INDEX_TYPE_UINT16,
-                );
-                vkCmdDrawIndexed(*cb_ptr, self.indexDataSize, 1, 0, 0, 0);
-                vh_end_draw_command_buffer(cb_ptr);
-            }
+            vh_destroy_draw_command_buffer(cb_ptr);
 
-            vh_draw(cb_ptr, 1);
-            vh_draw(cb_ptr, 0);
+
+            vh_begin_draw_command_buffer(cb_ptr);
+            let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
+            vh_bind_pipeline_to_command_buffer(self.pipeline_index, cb_cptr);
+            let binding: VkDeviceSize = 0;
+            vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &self.vertex_buffer, &binding);
+            vkCmdBindIndexBuffer(
+                *cb_ptr,
+                self.index_buffer,
+                0,
+                VkIndexType_VK_INDEX_TYPE_UINT16,
+            );
+            vkCmdDrawIndexed(*cb_ptr, self.indexDataSize, 1, 0, 0, 0);
+            vh_end_draw_command_buffer(cb_ptr);
+
+
+            if vh_draw(cb_ptr, 1) != 1 {
+                panic!("vh_draw has failed!");
+            }
+            if vh_draw(cb_ptr, 0) != 1 {
+                panic!("vh_draw has failed!");
+            };
+
             vh_present_next_image();
         }
     }
