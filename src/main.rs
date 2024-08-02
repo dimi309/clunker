@@ -67,6 +67,7 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 fn main() {
+
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("Clunker")
@@ -74,6 +75,9 @@ fn main() {
         .with_inner_size(LogicalSize::new(SCREEN_WIDTH, SCREEN_HEIGHT))
         .build(&event_loop)
         .unwrap();
+    
+    #[cfg(not(debug_assertions))]
+    window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(window.current_monitor())));
 
     let mut app = App::create(&window);
 
