@@ -9,6 +9,11 @@ mod model;
 use std::ffi::CString;
 use std::ptr::addr_of;
 
+use std::fs::File;
+use std::io::BufReader;
+use rodio::{Decoder, OutputStream, source::Source};
+
+
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use winit::{
@@ -67,6 +72,11 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 fn main() {
+
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let file = BufReader::new(File::open("bah.ogg").unwrap());
+    let source = Decoder::new(file).unwrap();
+    let _ = stream_handle.play_raw(source.convert_samples());
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()

@@ -16,10 +16,10 @@ bindgen. It is because of the existence of this C - Rust interface that
 I have called the project "Clunker", like an old customised car :) 
 
 The project is basically a program, written in Rust, which loads a model of a
-goat from a .glb (gltf) file and renders it using the Vulkan API. The goat
-is very basic and so are the shaders. I just clone the codebase and
-use it as a starting point for other projects. It is by no means a complete
-game engine or library. 
+goat from a .glb (gltf) file and renders it using the Vulkan API, also playing
+a short sound read from an .ogg file. The goat is very basic and so are the 
+shaders. I just clone the codebase and use it as a starting point for other 
+projects. It is by no means a complete game engine or library. 
 
 ![clunker](clunker-logo.png)
 
