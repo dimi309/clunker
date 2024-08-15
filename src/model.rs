@@ -7,11 +7,11 @@ pub struct Model {
 
 impl Model {
     fn readVertexData(&mut self, primitives: &Vec<gltf::Primitive>) {
-        let pos = primitives[0]
+        let accessor = primitives[0]
             .get(&gltf::Semantic::Positions)
-            .expect("no positions");
-        assert!(5126 == pos.data_type().as_gl_enum()); // float (4 bytes)
-        let posView = pos.view().expect("Could not find positions view");
+            .expect("Could not get positions accessor.");
+        assert!(accessor.data_type() == gltf::accessor::DataType::F32); // float (4 bytes)
+        let posView = accessor.view().expect("Could not find positions view.");
 
         let vertexSlice = &self.buffers[posView.buffer().index()]
             [posView.offset()..posView.offset() + posView.length()];
@@ -28,11 +28,11 @@ impl Model {
         for vt in vertexDataTmp {
             counter = counter + 1;
             if counter == 3 {
-                self.vertexData.push(vt + 0.5);
+                self.vertexData.push(vt);
                 self.vertexData.push(1f32);
                 counter = 0;
             } else {
-                self.vertexData.push(vt / 2.0);
+                self.vertexData.push(vt);
             }
         }
     }
