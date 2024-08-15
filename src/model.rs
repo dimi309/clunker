@@ -77,14 +77,13 @@ impl Model {
         if primitives.len() == 0 {
             return;
         }
-        let mut tempData: Vec<f32> = Vec::<f32>::new();
-        self.readF32PrimitivesData(&primitives, &mut tempData, gltf::Semantic::Positions);
-        self.vertexData = tempData.clone();
-        tempData.clear();
+        let mut readVertexData: Vec<f32> = Vec::<f32>::new();
+        self.readF32PrimitivesData(&primitives, &mut readVertexData, gltf::Semantic::Positions);
+        self.vertexData = readVertexData;
 
-        self.readF32PrimitivesData(&primitives, &mut tempData, gltf::Semantic::Normals);
-        self.normalsData = tempData.clone();
-        tempData.clear();
+        let mut readNormalsData: Vec<f32> = Vec::<f32>::new();
+        self.readF32PrimitivesData(&primitives, &mut readNormalsData, gltf::Semantic::Normals);
+        self.normalsData = readNormalsData;
 
         self.readIndexData(&primitives);
     }
