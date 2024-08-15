@@ -3,12 +3,18 @@ pub struct Model {
     pub buffers: Vec<gltf::buffer::Data>,
     pub vertexData: Vec<f32>,
     pub indexData: Vec<u16>,
+    pub normalsData: Vec<f32>
 }
 
 impl Model {
-    fn readVertexData(&mut self, primitives: &Vec<gltf::Primitive>) {
+    fn readF32PrimitivesData(
+        &mut self,
+        primitives: &Vec<gltf::Primitive>,
+        dataVariable: &mut Vec<f32>,
+        semantic: gltf::Semantic,
+    ) {
         let accessor = primitives[0]
-            .get(&gltf::Semantic::Positions)
+            .get(&semantic)
             .expect("Could not get positions accessor.");
         assert!(accessor.data_type() == gltf::accessor::DataType::F32); // float (4 bytes)
         let posView = accessor.view().expect("Could not find positions view.");
@@ -25,14 +31,16 @@ impl Model {
 
         let mut counter = 0;
 
+        // Sort data, adding a 1.0f 4th (w) component
         for vt in vertexDataTmp {
+            dataVariable.push(vt);
             counter = counter + 1;
             if counter == 3 {
-                self.vertexData.push(vt);
-                self.vertexData.push(1f32);
+                
+                if semantic == gltf::Semantic::Positions {
+                    dataVariable.push(1f32);
+                }
                 counter = 0;
-            } else {
-                self.vertexData.push(vt);
             }
         }
     }
@@ -69,8 +77,15 @@ impl Model {
         if primitives.len() == 0 {
             return;
         }
-        
-        self.readVertexData(&primitives);
+        let mut tempData: Vec<f32> = Vec::<f32>::new();
+        self.readF32PrimitivesData(&primitives, &mut tempData, gltf::Semantic::Positions);
+        self.vertexData = tempData.clone();
+        tempData.clear();
+
+        self.readF32PrimitivesData(&primitives, &mut tempData, gltf::Semantic::Normals);
+        self.normalsData = tempData.clone();
+        tempData.clear();
+
         self.readIndexData(&primitives);
     }
 }
