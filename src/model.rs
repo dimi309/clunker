@@ -1,28 +1,28 @@
 #[derive(Default)]
 pub struct Model {
     pub buffers: Vec<gltf::buffer::Data>,
-    pub vertexData: Vec<f32>,
-    pub indexData: Vec<u16>,
-    pub normalsData: Vec<f32>
+    pub vertex_data: Vec<f32>,
+    pub index_data: Vec<u16>,
+    pub normals_data: Vec<f32>
 }
 
 impl Model {
-    fn readF32PrimitivesData(
+    fn read_f32_primitives_data(
         &mut self,
         primitives: &Vec<gltf::Primitive>,
-        dataVariable: &mut Vec<f32>,
+        data_variable: &mut Vec<f32>,
         semantic: gltf::Semantic,
     ) {
         let accessor = primitives[0]
             .get(&semantic)
             .expect("Could not get positions accessor.");
         assert!(accessor.data_type() == gltf::accessor::DataType::F32); // float (4 bytes)
-        let posView = accessor.view().expect("Could not find positions view.");
+        let pos_view = accessor.view().expect("Could not find positions view.");
 
-        let vertexSlice = &self.buffers[posView.buffer().index()]
-            [posView.offset()..posView.offset() + posView.length()];
+        let vertex_slice = &self.buffers[pos_view.buffer().index()]
+            [pos_view.offset()..pos_view.offset() + pos_view.length()];
 
-        let vertexDataTmp: Vec<f32> = vertexSlice
+        let vertex_data_tmp: Vec<f32> = vertex_slice
             .chunks_exact(4)
             .map(TryInto::try_into)
             .map(Result::unwrap)
@@ -32,29 +32,29 @@ impl Model {
         let mut counter = 0;
 
         // Sort data, adding a 1.0f 4th (w) component
-        for vt in vertexDataTmp {
-            dataVariable.push(vt);
+        for vt in vertex_data_tmp {
+            data_variable.push(vt);
             counter = counter + 1;
             if counter == 3 {
                 
                 if semantic == gltf::Semantic::Positions {
-                    dataVariable.push(1f32);
+                    data_variable.push(1f32);
                 }
                 counter = 0;
             }
         }
     }
 
-    fn readIndexData(&mut self, primitives: &Vec<gltf::Primitive>) {
+    fn read_index_data(&mut self, primitives: &Vec<gltf::Primitive>) {
         let ind = &primitives[0].indices().expect("No indices index found");
         assert!(5123 == ind.data_type().as_gl_enum()); // unsigned short (2)
 
-        let indexView = ind.view().expect("View not found");
+        let index_view = ind.view().expect("View not found");
 
-        let indexSlice = &self.buffers[indexView.buffer().index()]
-            [indexView.offset()..indexView.offset() + indexView.length()];
+        let index_slice = &self.buffers[index_view.buffer().index()]
+            [index_view.offset()..index_view.offset() + index_view.length()];
 
-        self.indexData = indexSlice
+        self.index_data = index_slice
             .chunks_exact(2)
             .map(TryInto::try_into)
             .map(Result::unwrap)
@@ -77,14 +77,14 @@ impl Model {
         if primitives.len() == 0 {
             return;
         }
-        let mut readVertexData: Vec<f32> = Vec::<f32>::new();
-        self.readF32PrimitivesData(&primitives, &mut readVertexData, gltf::Semantic::Positions);
-        self.vertexData = readVertexData;
+        let mut retrieved_vertex_data: Vec<f32> = Vec::<f32>::new();
+        self.read_f32_primitives_data(&primitives, &mut retrieved_vertex_data, gltf::Semantic::Positions);
+        self.vertex_data = retrieved_vertex_data;
 
-        let mut readNormalsData: Vec<f32> = Vec::<f32>::new();
-        self.readF32PrimitivesData(&primitives, &mut readNormalsData, gltf::Semantic::Normals);
-        self.normalsData = readNormalsData;
+        let mut retrieved_normals_data: Vec<f32> = Vec::<f32>::new();
+        self.read_f32_primitives_data(&primitives, &mut retrieved_normals_data, gltf::Semantic::Normals);
+        self.normals_data = retrieved_normals_data;
 
-        self.readIndexData(&primitives);
+        self.read_index_data(&primitives);
     }
 }
