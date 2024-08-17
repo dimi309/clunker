@@ -18,15 +18,14 @@ pub struct Model {
     pub index_data: Vec<u16>,
     /// Normals data read from gltf file
     pub normals_data: Vec<f32>,
-
     
-    /// Vertex buffer on GPU
+    /// Vertex buffer on the GPU
     pub vertex_buffer: super::renderer::VkBuffer,
-    /// Vertex buffer memory on GPU
+    /// Vertex buffer memory on the GPU
     pub vertex_buffer_memory: super::renderer::VkDeviceMemory,
-    /// Index buffer on GPU
+    /// Index buffer on the GPU
     pub index_buffer: super::renderer::VkBuffer,
-    /// Index buffer memory on GPU
+    /// Index buffer memory on the GPU
     pub index_buffer_memory: super::renderer::VkDeviceMemory,
     /// The size of the index data in bytes
     pub index_data_size: u32,
