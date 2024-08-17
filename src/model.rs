@@ -1,9 +1,16 @@
-#[derive(Default)]
 pub struct Model {
     pub buffers: Vec<gltf::buffer::Data>,
     pub vertex_data: Vec<f32>,
     pub index_data: Vec<u16>,
-    pub normals_data: Vec<f32>
+    pub normals_data: Vec<f32>,
+
+    // Vulkan buffers
+    pub vertex_buffer: super::renderer::VkBuffer,
+    pub vertex_buffer_memory: super::renderer::VkDeviceMemory,
+
+    pub index_buffer: super::renderer::VkBuffer,
+    pub index_buffer_memory: super::renderer::VkDeviceMemory,
+    pub index_data_size: u32,
 }
 
 impl Model {
@@ -36,7 +43,6 @@ impl Model {
             data_variable.push(vt);
             counter = counter + 1;
             if counter == 3 {
-                
                 if semantic == gltf::Semantic::Positions {
                     data_variable.push(1f32);
                 }
@@ -78,11 +84,19 @@ impl Model {
             return;
         }
         let mut retrieved_vertex_data: Vec<f32> = Vec::<f32>::new();
-        self.read_f32_primitives_data(&primitives, &mut retrieved_vertex_data, gltf::Semantic::Positions);
+        self.read_f32_primitives_data(
+            &primitives,
+            &mut retrieved_vertex_data,
+            gltf::Semantic::Positions,
+        );
         self.vertex_data = retrieved_vertex_data;
 
         let mut retrieved_normals_data: Vec<f32> = Vec::<f32>::new();
-        self.read_f32_primitives_data(&primitives, &mut retrieved_normals_data, gltf::Semantic::Normals);
+        self.read_f32_primitives_data(
+            &primitives,
+            &mut retrieved_normals_data,
+            gltf::Semantic::Normals,
+        );
         self.normals_data = retrieved_normals_data;
 
         self.read_index_data(&primitives);

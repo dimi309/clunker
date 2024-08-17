@@ -6,7 +6,6 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-
 #[cfg(target_os = "linux")]
 use winit::platform::x11::WindowExtX11;
 
@@ -18,8 +17,8 @@ use winit::platform::macos::WindowExtMacOS;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use std::ptr::addr_of;
 use std::ffi::CString;
+use std::ptr::addr_of;
 
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 
@@ -59,32 +58,12 @@ unsafe extern "C" fn set_pipeline_layout_callback(
 }
 
 pub struct Renderer {
-
     name_str: CString,
 
     pipeline_index: u32,
 
     real_screen_width: u32,
     real_screen_height: u32,
-
-    vertex_buffer: VkBuffer,
-    vertex_buffer_ptr: *mut VkBuffer,
-
-    vertex_buffer_memory: VkDeviceMemory,
-    vertex_buffer_memory_ptr: *mut VkDeviceMemory,
-
-    staging_buffer: VkBuffer,
-    staging_buffer_ptr: *mut VkBuffer,
-
-    staging_buffer_memory: VkDeviceMemory,
-    staging_buffer_memory_ptr: *mut VkDeviceMemory,
-
-    index_buffer: VkBuffer,
-    index_buffer_ptr: *mut VkBuffer,
-    index_buffer_memory: VkDeviceMemory,
-    index_buffer_memory_ptr: *mut VkDeviceMemory,
-
-    index_data_size: u32,
 }
 
 impl Renderer {
@@ -145,32 +124,12 @@ impl Renderer {
 
     pub fn create(name: &str, window: &winit::window::Window) -> Renderer {
         let mut myself = Self {
-
             name_str: CString::new(name).expect("CString::new failed"),
-            
+
             pipeline_index: 100,
 
             real_screen_width: 1024,
             real_screen_height: 768,
-
-            vertex_buffer: std::ptr::null_mut(),
-            vertex_buffer_ptr: std::ptr::null_mut(),
-
-            vertex_buffer_memory: std::ptr::null_mut(),
-            vertex_buffer_memory_ptr: std::ptr::null_mut(),
-
-            staging_buffer: std::ptr::null_mut(),
-            staging_buffer_ptr: std::ptr::null_mut(),
-
-            staging_buffer_memory: std::ptr::null_mut(),
-            staging_buffer_memory_ptr: std::ptr::null_mut(),
-
-            index_buffer: std::ptr::null_mut(),
-            index_buffer_ptr: std::ptr::null_mut(),
-            index_buffer_memory: std::ptr::null_mut(),
-            index_buffer_memory_ptr: std::ptr::null_mut(),
-
-            index_data_size: 0,
         };
 
         let work_dir = std::env::current_dir()
@@ -217,20 +176,19 @@ impl Renderer {
                 iscc,
                 pidx_ptr,
             );
+        }
+        myself
+    }
 
-            myself.vertex_buffer_ptr = &mut myself.vertex_buffer;
-            myself.vertex_buffer_memory_ptr = &mut myself.vertex_buffer_memory;
+    pub fn to_gpu(&mut self, m: &mut super::model::Model) {
+        let vertex_buffer_ptr = &mut m.vertex_buffer;
+        let vertex_buffer_memory_ptr = &mut m.vertex_buffer_memory;
 
-            let mut m = super::model::Model {
-                ..Default::default()
-            };
-    
-            m.load("goat.glb");
+        let vertexDataSize = m.vertex_data.len();
 
-            let vertexDataSize = m.vertex_data.len();
-
+        unsafe {
             if vh_create_buffer(
-                myself.vertex_buffer_ptr,
+                vertex_buffer_ptr,
                 (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                     .try_into()
@@ -238,7 +196,7 @@ impl Renderer {
                 (vertexDataSize * std::mem::size_of::<f32>())
                     .try_into()
                     .unwrap(),
-                myself.vertex_buffer_memory_ptr,
+                vertex_buffer_memory_ptr,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
                     .unwrap(),
@@ -246,19 +204,23 @@ impl Renderer {
             {
                 panic!("Failed to create postition buffer.");
             }
+        }
 
-            myself.staging_buffer_ptr = &mut myself.staging_buffer;
-            myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
+        let mut staging_buffer: VkBuffer = std::ptr::null_mut();
+        let mut staging_buffer_memory: VkDeviceMemory = std::ptr::null_mut();
 
+        let staging_buffer_ptr = &mut staging_buffer;
+        let staging_buffer_memory_ptr = &mut staging_buffer_memory;
+        unsafe {
             if vh_create_buffer(
-                myself.staging_buffer_ptr,
+                staging_buffer_ptr,
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
                 (vertexDataSize * std::mem::size_of::<f32>())
                     .try_into()
                     .unwrap(),
-                myself.staging_buffer_memory_ptr,
+                staging_buffer_memory_ptr,
                 (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                     .try_into()
@@ -267,47 +229,50 @@ impl Renderer {
             {
                 panic!("Failed to create staging buffer for vertices.");
             }
+        }
+        let mut staging_data: *mut ::std::os::raw::c_void = std::ptr::null_mut();
+        let mut staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
 
-            let mut staging_data: *mut ::std::os::raw::c_void = std::ptr::null_mut();
-            let mut staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
-
+        unsafe {
             vkMapMemory(
                 vh_logical_device,
-                myself.staging_buffer_memory,
+                staging_buffer_memory,
                 0,
                 VK_WHOLE_SIZE as u64,
                 0,
                 staging_data_ptr,
             );
+        }
 
-            let src_ptr = m.vertex_data.as_ptr() as *const f32;
+        let src_ptr = m.vertex_data.as_ptr() as *const f32;
 
+        unsafe {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
                 vertexDataSize * std::mem::size_of::<f32>(),
             );
 
-            vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
+            vkUnmapMemory(vh_logical_device, staging_buffer_memory);
 
             vh_copy_buffer(
-                myself.staging_buffer,
-                myself.vertex_buffer,
+                staging_buffer,
+                m.vertex_buffer,
                 (vertexDataSize * std::mem::size_of::<f32>())
                     .try_into()
                     .unwrap(),
             );
 
-            vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
+            vh_destroy_buffer(staging_buffer, staging_buffer_memory);
+        }
+        let index_buffer_ptr = &mut m.index_buffer;
+        let index_buffer_memory_ptr = &mut m.index_buffer_memory;
 
-            myself.index_buffer_ptr = &mut myself.index_buffer;
-            myself.index_buffer_memory_ptr = &mut myself.index_buffer_memory;
-
-            let indexDataSize = m.index_data.len();
-            myself.index_data_size = indexDataSize.try_into().unwrap();
-
+        let indexDataSize = m.index_data.len();
+        m.index_data_size = indexDataSize.try_into().unwrap();
+        unsafe {
             if vh_create_buffer(
-                myself.index_buffer_ptr,
+                index_buffer_ptr,
                 (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                     .try_into()
@@ -315,7 +280,7 @@ impl Renderer {
                 (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
-                myself.index_buffer_memory_ptr,
+                index_buffer_memory_ptr,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
                     .unwrap(),
@@ -323,21 +288,21 @@ impl Renderer {
             {
                 panic!("Failed to create index buffer");
             }
-
-            myself.staging_buffer = std::ptr::null_mut();
-            myself.staging_buffer_ptr = &mut myself.staging_buffer;
-            myself.staging_buffer_memory = std::ptr::null_mut();
-            myself.staging_buffer_memory_ptr = &mut myself.staging_buffer_memory;
-
+        }
+        staging_buffer = std::ptr::null_mut();
+        let staging_buffer_ptr = &mut staging_buffer;
+        staging_buffer_memory = std::ptr::null_mut();
+        let staging_buffer_memory_ptr = &mut staging_buffer_memory;
+        unsafe {
             if vh_create_buffer(
-                myself.staging_buffer_ptr,
+                staging_buffer_ptr,
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
                 (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
-                myself.staging_buffer_memory_ptr,
+                staging_buffer_memory_ptr,
                 (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                     .try_into()
@@ -346,24 +311,22 @@ impl Renderer {
             {
                 panic!("Failed to create staging buffer for indices.");
             }
-
-            staging_data = std::ptr::null_mut();
-            staging_data_ptr = &mut staging_data;
-
+        }
+        staging_data = std::ptr::null_mut();
+        staging_data_ptr = &mut staging_data;
+        unsafe {
             vkMapMemory(
                 vh_logical_device,
-                myself.staging_buffer_memory,
+                staging_buffer_memory,
                 0,
                 VK_WHOLE_SIZE as u64,
                 0,
                 staging_data_ptr,
             );
+        }
+        let src_ptr = m.index_data.as_ptr() as *const u32;
 
-            
-    
-
-            let src_ptr = m.index_data.as_ptr() as *const u32;
-
+        unsafe {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
@@ -372,22 +335,21 @@ impl Renderer {
                     .unwrap(),
             );
 
-            vkUnmapMemory(vh_logical_device, myself.staging_buffer_memory);
+            vkUnmapMemory(vh_logical_device, staging_buffer_memory);
 
             vh_copy_buffer(
-                myself.staging_buffer,
-                myself.index_buffer,
+                staging_buffer,
+                m.index_buffer,
                 (indexDataSize * std::mem::size_of::<u16>())
                     .try_into()
                     .unwrap(),
             );
 
-            vh_destroy_buffer(myself.staging_buffer, myself.staging_buffer_memory);
+            vh_destroy_buffer(staging_buffer, staging_buffer_memory);
         }
-        myself
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, m: &super::model::Model) {
         let mut current_frame_index = 0;
         let cfi_ptr: *mut u32 = &mut current_frame_index;
 
@@ -402,21 +364,19 @@ impl Renderer {
 
             vh_destroy_draw_command_buffer(cb_ptr);
 
-
             vh_begin_draw_command_buffer(cb_ptr);
             let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
             vh_bind_pipeline_to_command_buffer(self.pipeline_index, cb_cptr);
             let binding: VkDeviceSize = 0;
-            vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &self.vertex_buffer, &binding);
+            vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &m.vertex_buffer, &binding);
             vkCmdBindIndexBuffer(
                 *cb_ptr,
-                self.index_buffer,
+                m.index_buffer,
                 0,
                 VkIndexType_VK_INDEX_TYPE_UINT16,
             );
-            vkCmdDrawIndexed(*cb_ptr, self.index_data_size, 1, 0, 0, 0);
+            vkCmdDrawIndexed(*cb_ptr, m.index_data_size, 1, 0, 0, 0);
             vh_end_draw_command_buffer(cb_ptr);
-
 
             if vh_draw(cb_ptr, 1) != 1 {
                 panic!("vh_draw has failed!");
@@ -436,9 +396,7 @@ impl Renderer {
                 let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
                 vh_destroy_draw_command_buffer(cb_p);
             }
-
-            vh_destroy_buffer(self.vertex_buffer, self.vertex_buffer_memory);
-            vh_destroy_buffer(self.index_buffer, self.index_buffer_memory);
+            
             vh_destroy_pipeline(self.pipeline_index);
 
             vh_destroy_swapchain();
@@ -452,16 +410,14 @@ impl Renderer {
         unsafe {
             self.real_screen_width = width;
             self.real_screen_height = height;
-            if self.real_screen_width == 0 { 
-                self.real_screen_width = 1 
+            if self.real_screen_width == 0 {
+                self.real_screen_width = 1
             };
-            if self.real_screen_height == 0 { 
-                self.real_screen_height = 1 
+            if self.real_screen_height == 0 {
+                self.real_screen_height = 1
             };
             vh_set_width_height(self.real_screen_width, self.real_screen_height);
             vh_recreate_pipelines_and_swapchain();
         }
-
     }
-
 }
