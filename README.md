@@ -1,11 +1,11 @@
 Clunker
 =======
 
-Boilerplate code for creating cross-platform games and graphical applications 
-running on **Vulkan**, using the **Rust programming language and only a small 
-set of dependencies**. The project provides bindings for the Vulkan API, also 
-taking care of some of the Vulkan setup busywork and ensuring cross-platform 
-compatibility, as it **runs on Windows, Linux and MacOS**.
+Boilerplate code for graphics rendering, running on **Vulkan**, using the 
+**Rust programming language and only a small set of dependencies**. The project 
+provides bindings for the Vulkan API, also taking care of some of the Vulkan 
+setup busywork and ensuring cross-platform compatibility, as it **runs on 
+Windows, Linux and MacOS**.
 
 **I am not using ash or any other Vulkan-wrapping crate.** I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with 
@@ -18,8 +18,8 @@ I have called the project "Clunker", like an old customised car :)
 The project is basically a program, written in Rust, which loads a model of a
 goat from a .glb (gltf) file and renders it using the Vulkan API, also playing
 a short sound read from an .ogg file. The goat is very basic and so are the 
-shaders. I just clone the codebase and use it as a starting point for other 
-projects. It is by no means a complete game engine or library. 
+shaders. This is by no means a complete game engine or library but rather just
+an experiment on using the [vulkan_helper](https://github.com/dimi309/vulkan_helper) from Rust.
 
 ![clunker](clunker-logo.png)
 
