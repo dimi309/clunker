@@ -39,26 +39,11 @@ fn main() {
 
     app.renderer.set_width_height(SCREEN_WIDTH, SCREEN_HEIGHT);
 
-
-    let mut m = model::Model {
-
-        buffers: Vec::<gltf::buffer::Data>::new(),
-        vertex_data: Vec::<f32>::new(),
-        index_data: Vec::<u16>::new(),
-        normals_data: Vec::<f32>::new(),
-
-        vertex_buffer: std::ptr::null_mut(),
-        vertex_buffer_memory: std::ptr::null_mut(),
-        index_buffer: std::ptr::null_mut(),
-        index_buffer_memory: std::ptr::null_mut(),
-        index_data_size: 0,
-
-    };
+    let mut m = model::Model::new();
 
     m.load("goat.glb");
 
-    app.renderer.to_gpu(&mut m);
-
+    m.to_gpu();
 
     let mut destroying = false;
 
@@ -75,15 +60,9 @@ fn main() {
                 destroying = true;
                 control_flow.set_exit();
                 
-                unsafe {
-                  renderer::vh_destroy_buffer(m.vertex_buffer, m.vertex_buffer_memory);
-                  renderer::vh_destroy_buffer(m.index_buffer, m.index_buffer_memory);
-                }
+                m.clear_gpu();
 
-                app.renderer.destroy();
-
-                
-
+                app.renderer.shutdown();
 
             }
             Event::WindowEvent {
@@ -112,7 +91,7 @@ impl App {
 
     fn create(window: &Window) -> App {
         let myself = Self {
-            renderer: renderer::Renderer::create("Clunker", window),
+            renderer: renderer::Renderer::new("Clunker", window),
         };
         
         myself
