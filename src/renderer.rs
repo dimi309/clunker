@@ -27,6 +27,7 @@ static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingD
     stride: 4u32 * (std::mem::size_of::<f32>() as u32),
     inputRate: 0,
 };
+
 static mut attrib_desc: VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {
     binding: 0,
     location: 0,

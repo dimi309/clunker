@@ -10,13 +10,11 @@ use super::renderer::*;
 
 /// The model struct
 pub struct Model {
-    /// Data buffers read from gltf file
-    pub buffers: Vec<gltf::buffer::Data>,
-    /// Vertex data read from gltf file
+    /// Vertex data
     pub vertex_data: Vec<f32>,
-    /// Index data read from gltf file
+    /// Index data
     pub index_data: Vec<u16>,
-    /// Normals data read from gltf file
+    /// Normals data
     pub normals_data: Vec<f32>,
     
     /// Vertex buffer on the GPU
@@ -35,7 +33,7 @@ impl Model {
     /// Create a model
     pub fn new() -> Model {
         let myself = Model {
-            buffers: Vec::<gltf::buffer::Data>::new(), 
+             
             vertex_data: Vec::<f32>::new(), 
             index_data: Vec::<u16>::new(),
             normals_data: Vec::<f32>::new(),
@@ -52,6 +50,7 @@ impl Model {
 
     fn read_f32_primitives_data(
         &mut self,
+        buffers: &Vec<gltf::buffer::Data>,
         primitives: &Vec<gltf::Primitive>,
         data_variable: &mut Vec<f32>,
         semantic: gltf::Semantic,
@@ -62,7 +61,7 @@ impl Model {
         assert!(accessor.data_type() == gltf::accessor::DataType::F32); // float (4 bytes)
         let pos_view = accessor.view().expect("Could not find positions view.");
 
-        let vertex_slice = &self.buffers[pos_view.buffer().index()]
+        let vertex_slice = &buffers[pos_view.buffer().index()]
             [pos_view.offset()..pos_view.offset() + pos_view.length()];
 
         let vertex_data_tmp: Vec<f32> = vertex_slice
@@ -87,13 +86,13 @@ impl Model {
         }
     }
 
-    fn read_index_data(&mut self, primitives: &Vec<gltf::Primitive>) {
+    fn read_index_data(&mut self, buffers: &Vec<gltf::buffer::Data>, primitives: &Vec<gltf::Primitive>) {
         let ind = &primitives[0].indices().expect("No indices index found");
         assert!(5123 == ind.data_type().as_gl_enum()); // unsigned short (2)
 
         let index_view = ind.view().expect("View not found");
 
-        let index_slice = &self.buffers[index_view.buffer().index()]
+        let index_slice = &buffers[index_view.buffer().index()]
             [index_view.offset()..index_view.offset() + index_view.length()];
 
         self.index_data = index_slice
@@ -106,10 +105,8 @@ impl Model {
 
     /// Load model from a gltf (glb) file
     pub fn load(&mut self, filepath: &str) {
-        let (document, buffers1, _) =
+        let (document, buffers, _) =
             gltf::import(filepath).expect("Error while importing document, buffers and images");
-
-        self.buffers = buffers1;
 
         if document.meshes().count() == 0 {
             return;
@@ -122,6 +119,7 @@ impl Model {
         }
         let mut retrieved_vertex_data: Vec<f32> = Vec::<f32>::new();
         self.read_f32_primitives_data(
+            &buffers,
             &primitives,
             &mut retrieved_vertex_data,
             gltf::Semantic::Positions,
@@ -130,13 +128,14 @@ impl Model {
 
         let mut retrieved_normals_data: Vec<f32> = Vec::<f32>::new();
         self.read_f32_primitives_data(
+            &buffers,
             &primitives,
             &mut retrieved_normals_data,
             gltf::Semantic::Normals,
         );
         self.normals_data = retrieved_normals_data;
 
-        self.read_index_data(&primitives);
+        self.read_index_data(&buffers, &primitives);
     }
 
     /// Create the GPU buffers and store the model on the GPU for later rendering
