@@ -22,18 +22,33 @@ use std::ptr::addr_of;
 
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 
-static mut binding_desc: VkVertexInputBindingDescription = VkVertexInputBindingDescription {
-    binding: 0,
-    stride: 4u32 * (std::mem::size_of::<f32>() as u32),
-    inputRate: 0,
-};
+static binding_desc: [VkVertexInputBindingDescription; 2] = [
+    VkVertexInputBindingDescription {
+        binding: 0,
+        stride: 4u32 * (std::mem::size_of::<f32>() as u32),
+        inputRate: 0,
+    },
+    VkVertexInputBindingDescription {
+        binding: 1,
+        stride: 3u32 * (std::mem::size_of::<f32>() as u32),
+        inputRate: 0,
+    },
+];
 
-static mut attrib_desc: VkVertexInputAttributeDescription = VkVertexInputAttributeDescription {
-    binding: 0,
-    location: 0,
-    format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
-    offset: 0,
-};
+static attrib_desc: [VkVertexInputAttributeDescription; 2] = [
+    VkVertexInputAttributeDescription {
+        binding: 0,
+        location: 0,
+        format: VkFormat_VK_FORMAT_R32G32B32A32_SFLOAT,
+        offset: 0,
+    },
+    VkVertexInputAttributeDescription {
+        binding: 1,
+        location: 1,
+        format: VkFormat_VK_FORMAT_R32G32B32_SFLOAT,
+        offset: 0,
+    },
+];
 
 static mut command_buffer: [VkCommandBuffer; NUM_FRAMES_IN_FLIGHT] = [std::ptr::null_mut(); 3];
 
@@ -42,10 +57,10 @@ unsafe extern "C" fn set_input_state_callback(
 ) -> i32 {
     println!("Input state callback called.");
 
-    (*inputStateCreateInfo).vertexBindingDescriptionCount = 1;
-    (*inputStateCreateInfo).vertexAttributeDescriptionCount = 1;
-    (*inputStateCreateInfo).pVertexBindingDescriptions = addr_of!(binding_desc);
-    (*inputStateCreateInfo).pVertexAttributeDescriptions = addr_of!(attrib_desc);
+    (*inputStateCreateInfo).vertexBindingDescriptionCount = 2;
+    (*inputStateCreateInfo).vertexAttributeDescriptionCount = 2;
+    (*inputStateCreateInfo).pVertexBindingDescriptions = addr_of!(binding_desc[0]);
+    (*inputStateCreateInfo).pVertexAttributeDescriptions = addr_of!(attrib_desc[0]);
     1
 }
 
@@ -202,14 +217,11 @@ impl Renderer {
             vh_begin_draw_command_buffer(cb_ptr);
             let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
             vh_bind_pipeline_to_command_buffer(self.pipeline_index, cb_cptr);
-            let binding: VkDeviceSize = 0;
-            vkCmdBindVertexBuffers(*cb_ptr, 0, 1, &m.vertex_buffer, &binding);
-            vkCmdBindIndexBuffer(
-                *cb_ptr,
-                m.index_buffer,
-                0,
-                VkIndexType_VK_INDEX_TYPE_UINT16,
-            );
+            let binding: [VkDeviceSize; 2] = [0, 0];
+            let vb: [VkBuffer; 2] = [m.vertex_buffer, m.normals_buffer];
+            vkCmdBindVertexBuffers(*cb_ptr, 0, 2, &vb[0], &binding[0]);
+            vkCmdBindIndexBuffer(*cb_ptr, m.index_buffer, 0, VkIndexType_VK_INDEX_TYPE_UINT16);
+            
             vkCmdDrawIndexed(*cb_ptr, m.index_data_size, 1, 0, 0, 0);
             vh_end_draw_command_buffer(cb_ptr);
 
@@ -232,9 +244,8 @@ impl Renderer {
                 let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
                 vh_destroy_draw_command_buffer(cb_p);
             }
-            
-            vh_destroy_pipeline(self.pipeline_index);
 
+            vh_destroy_pipeline(self.pipeline_index);
             vh_destroy_swapchain();
             vh_destroy_sync_objects();
             vkDestroySurfaceKHR(vh_instance, vh_surface, std::ptr::null_mut());

@@ -27,6 +27,11 @@ pub struct Model {
     pub index_buffer_memory: super::renderer::VkDeviceMemory,
     /// The size of the index data in bytes
     pub index_data_size: u32,
+    /// Vertex buffer on the GPU
+    pub normals_buffer: super::renderer::VkBuffer,
+    /// Vertex buffer memory on the GPU
+    pub normals_buffer_memory: super::renderer::VkDeviceMemory,
+
 }
 
 impl Model {
@@ -43,6 +48,8 @@ impl Model {
             index_buffer: std::ptr::null_mut(),
             index_buffer_memory: std::ptr::null_mut(),
             index_data_size: 0,
+            normals_buffer: std::ptr::null_mut(),
+            normals_buffer_memory: std::ptr::null_mut(),
         };
 
         myself
@@ -138,24 +145,19 @@ impl Model {
         self.read_index_data(&buffers, &primitives);
     }
 
-    /// Create the GPU buffers and store the model on the GPU for later rendering
-    pub fn to_gpu(&mut self) {
-        let vertex_buffer_ptr = &mut self.vertex_buffer;
-        let vertex_buffer_memory_ptr = &mut self.vertex_buffer_memory;
-
-        let vertexDataSize = self.vertex_data.len();
-
+    fn data_to_gpu<T> (data: &Vec<T>, gpu_buffer: &mut VkBuffer, gpu_buffer_memory: &mut VkDeviceMemory) {
+        let data_size = data.len();
         unsafe {
             if vh_create_buffer(
-                vertex_buffer_ptr,
+                gpu_buffer,
                 (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                     .try_into()
                     .unwrap(),
-                (vertexDataSize * std::mem::size_of::<f32>())
+                (data_size * std::mem::size_of::<T>())
                     .try_into()
                     .unwrap(),
-                vertex_buffer_memory_ptr,
+                gpu_buffer_memory,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
                     .unwrap(),
@@ -176,7 +178,7 @@ impl Model {
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
-                (vertexDataSize * std::mem::size_of::<f32>())
+                (data_size * std::mem::size_of::<T>())
                     .try_into()
                     .unwrap(),
                 staging_buffer_memory_ptr,
@@ -186,11 +188,11 @@ impl Model {
                     .unwrap(),
             ) != 1
             {
-                panic!("Failed to create staging buffer for vertices.");
+                panic!("Failed to create staging buffer.");
             }
         }
         let mut staging_data: *mut ::std::os::raw::c_void = std::ptr::null_mut();
-        let mut staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
+        let staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
 
         unsafe {
             vkMapMemory(
@@ -203,109 +205,39 @@ impl Model {
             );
         }
 
-        let src_ptr = self.vertex_data.as_ptr() as *const f32;
+        let src_ptr = data.as_ptr() as *const T;
 
         unsafe {
             std::ptr::copy_nonoverlapping(
                 src_ptr as *const u8,
                 staging_data as *mut u8,
-                vertexDataSize * std::mem::size_of::<f32>(),
+                data_size * std::mem::size_of::<T>(),
             );
 
             vkUnmapMemory(vh_logical_device, staging_buffer_memory);
 
             vh_copy_buffer(
                 staging_buffer,
-                self.vertex_buffer,
-                (vertexDataSize * std::mem::size_of::<f32>())
+                *gpu_buffer,
+                (data_size * std::mem::size_of::<T>())
                     .try_into()
                     .unwrap(),
             );
 
             vh_destroy_buffer(staging_buffer, staging_buffer_memory);
         }
-        let index_buffer_ptr = &mut self.index_buffer;
-        let index_buffer_memory_ptr = &mut self.index_buffer_memory;
 
-        let indexDataSize = self.index_data.len();
-        self.index_data_size = indexDataSize.try_into().unwrap();
-        unsafe {
-            if vh_create_buffer(
-                index_buffer_ptr,
-                (VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_DST_BIT
-                    | VkBufferUsageFlagBits_VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                    .try_into()
-                    .unwrap(),
-                (indexDataSize * std::mem::size_of::<u16>())
-                    .try_into()
-                    .unwrap(),
-                index_buffer_memory_ptr,
-                VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-                    .try_into()
-                    .unwrap(),
-            ) != 1
-            {
-                panic!("Failed to create index buffer");
-            }
-        }
-        staging_buffer = std::ptr::null_mut();
-        let staging_buffer_ptr = &mut staging_buffer;
-        staging_buffer_memory = std::ptr::null_mut();
-        let staging_buffer_memory_ptr = &mut staging_buffer_memory;
-        unsafe {
-            if vh_create_buffer(
-                staging_buffer_ptr,
-                VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-                    .try_into()
-                    .unwrap(),
-                (indexDataSize * std::mem::size_of::<u16>())
-                    .try_into()
-                    .unwrap(),
-                staging_buffer_memory_ptr,
-                (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-                    | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-                    .try_into()
-                    .unwrap(),
-            ) != 1
-            {
-                panic!("Failed to create staging buffer for indices.");
-            }
-        }
-        staging_data = std::ptr::null_mut();
-        staging_data_ptr = &mut staging_data;
-        unsafe {
-            vkMapMemory(
-                vh_logical_device,
-                staging_buffer_memory,
-                0,
-                VK_WHOLE_SIZE as u64,
-                0,
-                staging_data_ptr,
-            );
-        }
-        let src_ptr = self.index_data.as_ptr() as *const u32;
+    }
 
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                src_ptr as *const u8,
-                staging_data as *mut u8,
-                (indexDataSize * std::mem::size_of::<u16>())
-                    .try_into()
-                    .unwrap(),
-            );
+    /// Create the GPU buffers and store the model on the GPU for later rendering
+    pub fn to_gpu(&mut self) {
+        Model::data_to_gpu(&mut self.vertex_data, &mut self.vertex_buffer, &mut self.vertex_buffer_memory);
+        Model::data_to_gpu(&mut self.index_data, &mut self.index_buffer, &mut self.index_buffer_memory);
+        Model::data_to_gpu(&mut self.normals_data, &mut self.normals_buffer, &mut self.normals_buffer_memory);
 
-            vkUnmapMemory(vh_logical_device, staging_buffer_memory);
-
-            vh_copy_buffer(
-                staging_buffer,
-                self.index_buffer,
-                (indexDataSize * std::mem::size_of::<u16>())
-                    .try_into()
-                    .unwrap(),
-            );
-
-            vh_destroy_buffer(staging_buffer, staging_buffer_memory);
-        }
+        let ids = self.index_data.len();
+        self.index_data_size = ids.try_into().unwrap();
+       
     }
 
     /// Clear the model from the GPU
@@ -313,6 +245,7 @@ impl Model {
         unsafe {
             vh_destroy_buffer(self.vertex_buffer, self.vertex_buffer_memory);
             vh_destroy_buffer(self.index_buffer, self.index_buffer_memory);
+            vh_destroy_buffer(self.normals_buffer, self.normals_buffer_memory);
         }
 
         self.vertex_buffer = std::ptr::null_mut();
