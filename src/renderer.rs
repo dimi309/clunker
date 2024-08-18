@@ -21,6 +21,7 @@ use std::ffi::CString;
 use std::ptr::addr_of;
 
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
+const MAX_OBJECTS_PER_FRAME: usize = 10;
 
 static binding_desc: [VkVertexInputBindingDescription; 2] = [
     VkVertexInputBindingDescription {
@@ -81,6 +82,8 @@ pub struct Renderer {
 
     real_screen_width: u32,
     real_screen_height: u32,
+
+    descriptor_pool: VkDescriptorPool,
 }
 
 impl Renderer {
@@ -148,6 +151,8 @@ impl Renderer {
 
             real_screen_width: 1024,
             real_screen_height: 768,
+
+            descriptor_pool: std::ptr::null_mut(),
         };
 
         let work_dir = std::env::current_dir()
@@ -175,6 +180,8 @@ impl Renderer {
             if vh_create_swapchain() != 1 {
                 panic!("Failed to create Vulkan swapchain.");
             }
+
+            myself.create_descriptor_pool();
 
             let iscb = Option::Some(
                 set_input_state_callback
@@ -221,7 +228,7 @@ impl Renderer {
             let vb: [VkBuffer; 2] = [m.vertex_buffer, m.normals_buffer];
             vkCmdBindVertexBuffers(*cb_ptr, 0, 2, &vb[0], &binding[0]);
             vkCmdBindIndexBuffer(*cb_ptr, m.index_buffer, 0, VkIndexType_VK_INDEX_TYPE_UINT16);
-            
+
             vkCmdDrawIndexed(*cb_ptr, m.index_data_size, 1, 0, 0, 0);
             vh_end_draw_command_buffer(cb_ptr);
 
@@ -246,6 +253,7 @@ impl Renderer {
             }
 
             vh_destroy_pipeline(self.pipeline_index);
+            vkDestroyDescriptorPool(vh_logical_device, self.descriptor_pool, std::ptr::null());
             vh_destroy_swapchain();
             vh_destroy_sync_objects();
             vkDestroySurfaceKHR(vh_instance, vh_surface, std::ptr::null_mut());
@@ -268,6 +276,46 @@ impl Renderer {
             };
             vh_set_width_height(self.real_screen_width, self.real_screen_height);
             vh_recreate_pipelines_and_swapchain();
+        }
+    }
+
+    pub fn create_descriptor_pool(&mut self) {
+        let descriptor_pool_sizes: [VkDescriptorPoolSize; NUM_FRAMES_IN_FLIGHT] = [
+            VkDescriptorPoolSize {
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                descriptorCount: 1,
+            },
+            VkDescriptorPoolSize {
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                descriptorCount: 1,
+            },
+            VkDescriptorPoolSize {
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                descriptorCount: 1,
+            },
+        ];
+
+        let descriptor_pool_create_info: *const VkDescriptorPoolCreateInfo =
+            &VkDescriptorPoolCreateInfo {
+                sType: VkStructureType_VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                poolSizeCount: 3,
+                pPoolSizes: &descriptor_pool_sizes[0],
+                flags:
+                    VkDescriptorPoolCreateFlagBits_VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
+                        as u32,
+                maxSets: NUM_FRAMES_IN_FLIGHT as u32 * MAX_OBJECTS_PER_FRAME as u32,
+                pNext: std::ptr::null(),
+            };
+
+        let dpptr: *const VkDescriptorPoolCreateInfo = descriptor_pool_create_info;
+        let dptr: *mut VkDescriptorPool = &mut self.descriptor_pool;
+
+        unsafe {
+            if vkCreateDescriptorPool(vh_logical_device, dpptr, std::ptr::null(), dptr)
+                != VkResult_VK_SUCCESS
+            {
+                panic!("Failed to create descriptor pool");
+            }
         }
     }
 }
