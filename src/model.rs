@@ -88,7 +88,7 @@ impl Model {
 
     fn read_index_data(&mut self, buffers: &Vec<gltf::buffer::Data>, primitives: &Vec<gltf::Primitive>) {
         let ind = &primitives[0].indices().expect("No indices index found");
-        assert!(5123 == ind.data_type().as_gl_enum()); // unsigned short (2)
+        assert!(ind.data_type() == gltf::accessor::DataType::U16); 
 
         let index_view = ind.view().expect("View not found");
 
