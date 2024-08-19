@@ -74,6 +74,13 @@ unsafe extern "C" fn set_pipeline_layout_callback(
     1
 }
 
+/// Transformation for a model, passed to the vertex shader
+struct UboTransformation {
+    transformation: [f32; 16],
+    offset: [f32; 3],
+    padding: [f32; 13],
+}
+
 /// The renderer struct, used for rendering models
 pub struct Renderer {
     name_str: CString,
@@ -84,6 +91,10 @@ pub struct Renderer {
     real_screen_height: u32,
 
     descriptor_pool: VkDescriptorPool,
+
+    descriptor_set_layout: VkDescriptorSetLayout,
+
+    descriptor_set: [VkDescriptorSet; NUM_FRAMES_IN_FLIGHT],
 }
 
 impl Renderer {
@@ -153,6 +164,12 @@ impl Renderer {
             real_screen_height: 768,
 
             descriptor_pool: std::ptr::null_mut(),
+            descriptor_set_layout: std::ptr::null_mut(),
+            descriptor_set: [
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            ],
         };
 
         let work_dir = std::env::current_dir()
@@ -182,6 +199,8 @@ impl Renderer {
             }
 
             myself.create_descriptor_pool();
+
+            myself.allocate_descriptor_sets();
 
             let iscb = Option::Some(
                 set_input_state_callback
@@ -253,6 +272,7 @@ impl Renderer {
             }
 
             vh_destroy_pipeline(self.pipeline_index);
+            self.destroy_descriptor_sets();
             vkDestroyDescriptorPool(vh_logical_device, self.descriptor_pool, std::ptr::null());
             vh_destroy_swapchain();
             vh_destroy_sync_objects();
@@ -279,7 +299,7 @@ impl Renderer {
         }
     }
 
-    pub fn create_descriptor_pool(&mut self) {
+    fn create_descriptor_pool(&mut self) {
         let descriptor_pool_sizes: [VkDescriptorPoolSize; NUM_FRAMES_IN_FLIGHT] = [
             VkDescriptorPoolSize {
                 type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
@@ -315,6 +335,73 @@ impl Renderer {
                 != VkResult_VK_SUCCESS
             {
                 panic!("Failed to create descriptor pool");
+            }
+        }
+    }
+
+    fn allocate_descriptor_sets(&mut self) {
+        let dslb = VkDescriptorSetLayoutBinding {
+            binding: 0,
+            descriptorType: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount: 1,
+            stageFlags: VkShaderStageFlagBits_VK_SHADER_STAGE_VERTEX_BIT as u32,
+            pImmutableSamplers: std::ptr::null(),
+        };
+
+        let dslci = VkDescriptorSetLayoutCreateInfo {
+            sType: VkStructureType_VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            bindingCount: 1,
+            pBindings: &dslb,
+            pNext: std::ptr::null(),
+            flags: 0,
+        };
+
+        unsafe {
+            if vkCreateDescriptorSetLayout(
+                vh_logical_device,
+                &dslci,
+                std::ptr::null(),
+                &mut self.descriptor_set_layout,
+            ) != VkResult_VK_SUCCESS
+            {
+                panic!("Failed to create descriptor set layout");
+            }
+        }
+
+        let dsai = VkDescriptorSetAllocateInfo {
+            sType: VkStructureType_VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            descriptorPool: self.descriptor_pool,
+            descriptorSetCount: 1,
+            pSetLayouts: &self.descriptor_set_layout,
+            pNext: std::ptr::null(),
+        };
+
+        for n in 1..NUM_FRAMES_IN_FLIGHT {
+            self.descriptor_set[n] = std::ptr::null_mut();
+
+            unsafe {
+                if vkAllocateDescriptorSets(vh_logical_device, &dsai, &mut self.descriptor_set[n])
+                    != VkResult_VK_SUCCESS
+                {
+                    panic!("Failed to allocate descriptor set");
+                }
+            }
+        }
+    }
+
+    fn destroy_descriptor_sets(&mut self) {
+        for n in 1..NUM_FRAMES_IN_FLIGHT {
+            unsafe {
+                if vkFreeDescriptorSets(
+                    vh_logical_device,
+                    self.descriptor_pool,
+                    1,
+                    &self.descriptor_set[n],
+                ) != VkResult_VK_SUCCESS
+                {
+                    panic!("Failed to free descriptor set");
+                }
+                self.descriptor_set[n] = std::ptr::null_mut(); // cannot find VK_NULL_HANDLE in bindings...
             }
         }
     }
