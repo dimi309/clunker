@@ -192,7 +192,6 @@ impl Model {
             }
         }
         let mut staging_data: *mut ::std::os::raw::c_void = std::ptr::null_mut();
-        let staging_data_ptr: *mut *mut ::std::os::raw::c_void = &mut staging_data;
 
         unsafe {
             vkMapMemory(
@@ -201,7 +200,7 @@ impl Model {
                 0,
                 VK_WHOLE_SIZE as u64,
                 0,
-                staging_data_ptr,
+                &mut staging_data,
             );
         }
 

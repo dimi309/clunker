@@ -23,6 +23,8 @@ use std::ptr::addr_of;
 const NUM_FRAMES_IN_FLIGHT: usize = 3;
 const MAX_OBJECTS_PER_FRAME: usize = 10;
 
+static mut descriptor_set_layout: VkDescriptorSetLayout = std::ptr::null_mut();
+
 static binding_desc: [VkVertexInputBindingDescription; 2] = [
     VkVertexInputBindingDescription {
         binding: 0,
@@ -69,17 +71,20 @@ unsafe extern "C" fn set_pipeline_layout_callback(
     pipelineLayoutCreateInfo: *mut VkPipelineLayoutCreateInfo,
 ) -> i32 {
     println!("Pipeline layout callback called.");
-    (*pipelineLayoutCreateInfo).pSetLayouts = std::ptr::null_mut();
-    (*pipelineLayoutCreateInfo).setLayoutCount = 0;
+    (*pipelineLayoutCreateInfo).pSetLayouts = std::ptr::addr_of_mut!(descriptor_set_layout);
+    (*pipelineLayoutCreateInfo).setLayoutCount = 1;
     1
 }
 
+#[derive(Default)]
 /// Transformation for a model, passed to the vertex shader
 struct UboTransformation {
     transformation: [f32; 16],
     offset: [f32; 3],
     padding: [f32; 13],
 }
+
+const UBO_BINDING: u32 = 0;
 
 /// The renderer struct, used for rendering models
 pub struct Renderer {
@@ -92,9 +97,11 @@ pub struct Renderer {
 
     descriptor_pool: VkDescriptorPool,
 
-    descriptor_set_layout: VkDescriptorSetLayout,
-
     descriptor_set: [VkDescriptorSet; NUM_FRAMES_IN_FLIGHT],
+
+    ubo_buffer: [VkBuffer; NUM_FRAMES_IN_FLIGHT],
+    ubo_buffer_memory: [VkDeviceMemory; NUM_FRAMES_IN_FLIGHT],
+    ubo: UboTransformation,
 }
 
 impl Renderer {
@@ -164,12 +171,23 @@ impl Renderer {
             real_screen_height: 768,
 
             descriptor_pool: std::ptr::null_mut(),
-            descriptor_set_layout: std::ptr::null_mut(),
+
             descriptor_set: [
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
             ],
+            ubo_buffer: [
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            ],
+            ubo_buffer_memory: [
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            ],
+            ubo: { Default::default() },
         };
 
         let work_dir = std::env::current_dir()
@@ -220,25 +238,43 @@ impl Renderer {
                 iscc,
                 pidx_ptr,
             );
+
+            for n in 0..NUM_FRAMES_IN_FLIGHT {
+                (myself.ubo_buffer[n], myself.ubo_buffer_memory[n]) =
+                    super::descriptor::create_ubo_buffer(&myself.ubo);
+            }
         }
         myself
     }
 
     /// Render a model
-    pub fn render(&mut self, m: &super::model::Model) {
+    pub fn render(&mut self, m: &super::model::Model, offset: [f32; 3]) {
         let mut current_frame_index = 0;
-        let cfi_ptr: *mut u32 = &mut current_frame_index;
 
-        let mut image_index = 0;
-        let img_ptr: *mut u32 = &mut image_index;
+        let mut image_index_not_needed = 0;
+
+        self.ubo.offset = offset;
 
         unsafe {
-            vh_acquire_next_image(self.pipeline_index, img_ptr, cfi_ptr);
+            vh_acquire_next_image(
+                self.pipeline_index,
+                &mut image_index_not_needed,
+                &mut current_frame_index,
+            );
             vh_wait_gpu_cpu_fence(current_frame_index);
+
+            super::descriptor::update_ubo_buffer(
+                &self.ubo,
+                self.ubo_buffer_memory[current_frame_index as usize],
+            );
 
             let cb_ptr: *mut VkCommandBuffer = &mut command_buffer[current_frame_index as usize];
 
             vh_destroy_draw_command_buffer(cb_ptr);
+
+            if vh_new_pipeline_state == 1 {
+                self.update_descriptor_sets();
+            }
 
             vh_begin_draw_command_buffer(cb_ptr);
             let cb_cptr: *const VkCommandBuffer = &command_buffer[current_frame_index as usize];
@@ -247,6 +283,16 @@ impl Renderer {
             let vb: [VkBuffer; 2] = [m.vertex_buffer, m.normals_buffer];
             vkCmdBindVertexBuffers(*cb_ptr, 0, 2, &vb[0], &binding[0]);
             vkCmdBindIndexBuffer(*cb_ptr, m.index_buffer, 0, VkIndexType_VK_INDEX_TYPE_UINT16);
+            vkCmdBindDescriptorSets(
+                *cb_ptr,
+                VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS,
+                *vh_pipeline_layout.wrapping_add(self.pipeline_index as usize),
+                0,
+                1,
+                &self.descriptor_set[current_frame_index as usize],
+                0,
+                std::ptr::null(),
+            );
 
             vkCmdDrawIndexed(*cb_ptr, m.index_data_size, 1, 0, 0, 0);
             vh_end_draw_command_buffer(cb_ptr);
@@ -266,7 +312,7 @@ impl Renderer {
     pub fn shutdown(&mut self) {
         unsafe {
             vkDeviceWaitIdle(vh_logical_device);
-            for idx in 0..NUM_FRAMES_IN_FLIGHT - 1 {
+            for idx in 0..NUM_FRAMES_IN_FLIGHT {
                 let cb_p: *mut VkCommandBuffer = &mut command_buffer[idx];
                 vh_destroy_draw_command_buffer(cb_p);
             }
@@ -274,6 +320,11 @@ impl Renderer {
             vh_destroy_pipeline(self.pipeline_index);
             self.destroy_descriptor_sets();
             vkDestroyDescriptorPool(vh_logical_device, self.descriptor_pool, std::ptr::null());
+
+            for n in 0..NUM_FRAMES_IN_FLIGHT {
+                vh_destroy_buffer(self.ubo_buffer[n], self.ubo_buffer_memory[n]);
+            }
+
             vh_destroy_swapchain();
             vh_destroy_sync_objects();
             vkDestroySurfaceKHR(vh_instance, vh_surface, std::ptr::null_mut());
@@ -302,15 +353,15 @@ impl Renderer {
     fn create_descriptor_pool(&mut self) {
         let descriptor_pool_sizes: [VkDescriptorPoolSize; NUM_FRAMES_IN_FLIGHT] = [
             VkDescriptorPoolSize {
-                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 descriptorCount: 1,
             },
             VkDescriptorPoolSize {
-                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 descriptorCount: 1,
             },
             VkDescriptorPoolSize {
-                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                type_: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 descriptorCount: 1,
             },
         ];
@@ -341,7 +392,7 @@ impl Renderer {
 
     fn allocate_descriptor_sets(&mut self) {
         let dslb = VkDescriptorSetLayoutBinding {
-            binding: 0,
+            binding: UBO_BINDING,
             descriptorType: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             descriptorCount: 1,
             stageFlags: VkShaderStageFlagBits_VK_SHADER_STAGE_VERTEX_BIT as u32,
@@ -361,25 +412,25 @@ impl Renderer {
                 vh_logical_device,
                 &dslci,
                 std::ptr::null(),
-                &mut self.descriptor_set_layout,
+                std::ptr::addr_of_mut!(descriptor_set_layout),
             ) != VkResult_VK_SUCCESS
             {
                 panic!("Failed to create descriptor set layout");
             }
         }
 
-        let dsai = VkDescriptorSetAllocateInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            descriptorPool: self.descriptor_pool,
-            descriptorSetCount: 1,
-            pSetLayouts: &self.descriptor_set_layout,
-            pNext: std::ptr::null(),
-        };
+        unsafe {
+            let dsai = VkDescriptorSetAllocateInfo {
+                sType: VkStructureType_VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                descriptorPool: self.descriptor_pool,
+                descriptorSetCount: 1,
+                pSetLayouts: std::ptr::addr_of_mut!(descriptor_set_layout),
+                pNext: std::ptr::null(),
+            };
 
-        for n in 1..NUM_FRAMES_IN_FLIGHT {
-            self.descriptor_set[n] = std::ptr::null_mut();
+            for n in 0..NUM_FRAMES_IN_FLIGHT {
+                self.descriptor_set[n] = std::ptr::null_mut();
 
-            unsafe {
                 if vkAllocateDescriptorSets(vh_logical_device, &dsai, &mut self.descriptor_set[n])
                     != VkResult_VK_SUCCESS
                 {
@@ -390,7 +441,7 @@ impl Renderer {
     }
 
     fn destroy_descriptor_sets(&mut self) {
-        for n in 1..NUM_FRAMES_IN_FLIGHT {
+        for n in 0..NUM_FRAMES_IN_FLIGHT {
             unsafe {
                 if vkFreeDescriptorSets(
                     vh_logical_device,
@@ -402,6 +453,33 @@ impl Renderer {
                     panic!("Failed to free descriptor set");
                 }
                 self.descriptor_set[n] = std::ptr::null_mut(); // cannot find VK_NULL_HANDLE in bindings...
+            }
+        }
+    }
+
+    fn update_descriptor_sets(&mut self) {
+        for n in 0..NUM_FRAMES_IN_FLIGHT {
+            let dbi = VkDescriptorBufferInfo {
+                buffer: self.ubo_buffer[n],
+                offset: 0,
+                range: std::mem::size_of::<UboTransformation>() as u64,
+            };
+
+            let wds = VkWriteDescriptorSet {
+                sType: VkStructureType_VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                pNext: std::ptr::null(),
+                dstSet: self.descriptor_set[n],
+                dstBinding: UBO_BINDING,
+                dstArrayElement: 0,
+                descriptorCount: 1,
+                descriptorType: VkDescriptorType_VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                pImageInfo: std::ptr::null(),
+                pBufferInfo: &dbi,
+                pTexelBufferView: std::ptr::null(),
+            };
+
+            unsafe {
+                vkUpdateDescriptorSets(vh_logical_device, 1, &wds, 0, std::ptr::null());
             }
         }
     }
