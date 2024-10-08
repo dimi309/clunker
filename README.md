@@ -13,15 +13,15 @@ Rust (vulkan_helper was also used by my [small3d](https://github.com/dimi309/sma
 library [once upon a time](https://github.com/dimi309/small3d/releases/tag/1.8015.last.vulkan)). 
 The vulkan_helper and the Vulkan API bindings are created during the build with 
 bindgen. It is because of the existence of this C - Rust interface that
-I have called the project "Clunker", like an old customised car :) 
+I have called the project "Clunker", like an old customised car :)
+
+![clunker](clunker-logo.png)
 
 The project is basically a program, written in Rust, which loads a model of a
 goat from a .glb (gltf) file and renders it using the Vulkan API, also playing
 a short sound read from an .ogg file. The goat is very basic and so are the 
 shaders. This is by no means a complete game engine or library but rather just
 an experiment on using the [vulkan_helper](https://github.com/dimi309/vulkan_helper) from Rust.
-
-![clunker](clunker-logo.png)
 
 Prerequisites
 -------------
