@@ -13,14 +13,10 @@ layout(location = 0) smooth out float cosAngIncidence;
 
 void main()
 {
-  vec4 lightDir = vec4(0.3, -0.4, 0.5, 1.0);
+  vec4 lightDir = vec4(0.3, 0.4, 0.2, 1.0);
 
   cosAngIncidence = dot(vec4(normal, 1), lightDir);
   
   gl_Position = position + vec4(offset, 0.0);
-
-  // OpenGL -> Vulkan viewport
-  gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
-  gl_Position.y = -gl_Position.y;
 
 }

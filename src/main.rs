@@ -48,7 +48,7 @@ fn main() {
 
     let mut destroying = false;
 
-    let position = [0.0f32, -0.2f32, 0.0f32];
+    let position = [0.0f32, 0.5f32, 0.8f32];
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll(); // vs .set_wait

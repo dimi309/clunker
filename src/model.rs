@@ -16,7 +16,7 @@ pub struct Model {
     pub index_data: Vec<u16>,
     /// Normals data
     pub normals_data: Vec<f32>,
-    
+
     /// Vertex buffer on the GPU
     pub vertex_buffer: super::renderer::VkBuffer,
     /// Vertex buffer memory on the GPU
@@ -31,15 +31,13 @@ pub struct Model {
     pub normals_buffer: super::renderer::VkBuffer,
     /// Vertex buffer memory on the GPU
     pub normals_buffer_memory: super::renderer::VkDeviceMemory,
-
 }
 
 impl Model {
     /// Create a model
     pub fn new() -> Model {
         let myself = Model {
-             
-            vertex_data: Vec::<f32>::new(), 
+            vertex_data: Vec::<f32>::new(),
             index_data: Vec::<u16>::new(),
             normals_data: Vec::<f32>::new(),
 
@@ -82,8 +80,13 @@ impl Model {
 
         // Sort data, adding a 1.0f 4th (w) component
         for vt in vertex_data_tmp {
-            data_variable.push(vt);
+            if counter == 1 { // In vulkan +y is downwards
+                data_variable.push(-1f32 * vt);
+            } else {
+                data_variable.push(vt);
+            }
             counter = counter + 1;
+
             if counter == 3 {
                 if semantic == gltf::Semantic::Positions {
                     data_variable.push(1f32);
@@ -93,9 +96,13 @@ impl Model {
         }
     }
 
-    fn read_index_data(&mut self, buffers: &Vec<gltf::buffer::Data>, primitives: &Vec<gltf::Primitive>) {
+    fn read_index_data(
+        &mut self,
+        buffers: &Vec<gltf::buffer::Data>,
+        primitives: &Vec<gltf::Primitive>,
+    ) {
         let ind = &primitives[0].indices().expect("No indices index found");
-        assert!(ind.data_type() == gltf::accessor::DataType::U16); 
+        assert!(ind.data_type() == gltf::accessor::DataType::U16);
 
         let index_view = ind.view().expect("View not found");
 
@@ -145,7 +152,11 @@ impl Model {
         self.read_index_data(&buffers, &primitives);
     }
 
-    fn data_to_gpu<T> (data: &Vec<T>, gpu_buffer: &mut VkBuffer, gpu_buffer_memory: &mut VkDeviceMemory) {
+    fn data_to_gpu<T>(
+        data: &Vec<T>,
+        gpu_buffer: &mut VkBuffer,
+        gpu_buffer_memory: &mut VkDeviceMemory,
+    ) {
         let data_size = data.len();
         unsafe {
             if vh_create_buffer(
@@ -154,9 +165,7 @@ impl Model {
                     | VkBufferUsageFlagBits_VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                     .try_into()
                     .unwrap(),
-                (data_size * std::mem::size_of::<T>())
-                    .try_into()
-                    .unwrap(),
+                (data_size * std::mem::size_of::<T>()).try_into().unwrap(),
                 gpu_buffer_memory,
                 VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
                     .try_into()
@@ -178,9 +187,7 @@ impl Model {
                 VkBufferUsageFlagBits_VK_BUFFER_USAGE_TRANSFER_SRC_BIT
                     .try_into()
                     .unwrap(),
-                (data_size * std::mem::size_of::<T>())
-                    .try_into()
-                    .unwrap(),
+                (data_size * std::mem::size_of::<T>()).try_into().unwrap(),
                 staging_buffer_memory_ptr,
                 (VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                     | VkMemoryPropertyFlagBits_VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
@@ -218,25 +225,33 @@ impl Model {
             vh_copy_buffer(
                 staging_buffer,
                 *gpu_buffer,
-                (data_size * std::mem::size_of::<T>())
-                    .try_into()
-                    .unwrap(),
+                (data_size * std::mem::size_of::<T>()).try_into().unwrap(),
             );
 
             vh_destroy_buffer(staging_buffer, staging_buffer_memory);
         }
-
     }
 
     /// Create the GPU buffers and store the model on the GPU for later rendering
     pub fn to_gpu(&mut self) {
-        Model::data_to_gpu(&mut self.vertex_data, &mut self.vertex_buffer, &mut self.vertex_buffer_memory);
-        Model::data_to_gpu(&mut self.index_data, &mut self.index_buffer, &mut self.index_buffer_memory);
-        Model::data_to_gpu(&mut self.normals_data, &mut self.normals_buffer, &mut self.normals_buffer_memory);
+        Model::data_to_gpu(
+            &mut self.vertex_data,
+            &mut self.vertex_buffer,
+            &mut self.vertex_buffer_memory,
+        );
+        Model::data_to_gpu(
+            &mut self.index_data,
+            &mut self.index_buffer,
+            &mut self.index_buffer_memory,
+        );
+        Model::data_to_gpu(
+            &mut self.normals_data,
+            &mut self.normals_buffer,
+            &mut self.normals_buffer_memory,
+        );
 
         let ids = self.index_data.len();
         self.index_data_size = ids.try_into().unwrap();
-       
     }
 
     /// Clear the model from the GPU
