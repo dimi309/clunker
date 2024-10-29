@@ -17,6 +17,6 @@ void main()
 
   cosAngIncidence = dot(vec4(normal, 1), lightDir);
   
-  gl_Position = position + vec4(offset, 0.0);
+  gl_Position = position + vec4(offset, 1.0);
 
 }
