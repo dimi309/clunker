@@ -67,9 +67,9 @@ after cloning using the following commands:
 	git submodule init
 	git submodule update
 
-On Linux, the WINIT_UNIX_BACKEND environment variable has to be set to "x11". 
-Otherwise winit may launch using wayland, making winit's xlib_window() and 
-xcb_connection() window functions return None. The values returned by these 
+On Linux, the WINIT_UNIX_BACKEND environment variable might have to be set
+to "x11". Otherwise winit may launch using wayland, making winit's xlib_window()
+and xcb_connection() window functions return None. The values returned by these 
 functions are needed for creating a Vulkan surface.
 
 ![snapshot](clunker.png)
