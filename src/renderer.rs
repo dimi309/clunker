@@ -12,9 +12,6 @@ use winit::platform::x11::WindowExtX11;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
 
-#[cfg(target_os = "macos")]
-use winit::platform::macos::WindowExtMacOS;
-
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 use std::ffi::CString;
@@ -137,20 +134,6 @@ impl Renderer {
                 c as *mut xcb_connection_t,
                 w,
             );
-
-            if res > 0 {
-                println!("Vulkan instance and surface created.")
-            } else {
-                panic!("Vulkan instance and surface creation has failed.");
-            }
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    fn init_vulkan(&self, window: &winit::window::Window) {
-        // Using the vulkan helper
-        unsafe {
-            let res = vh_create_instance_and_surface_macos(self.nameStr.as_ptr(), window.ns_view());
 
             if res > 0 {
                 println!("Vulkan instance and surface created.")

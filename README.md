@@ -6,7 +6,7 @@ goat from a .glb (gltf) file and renders it using the Vulkan API, also playing
 a short sound read from an .ogg file. The goat is very basic and so are the 
 shaders. This is by no means a complete game engine or library but rather just
 an experiment that can also be built upon to produce a game or other graphical 
-application that runs on Windows, Linux and MacOS.
+application that runs on Windows and Linux.
 
 **I am not using ash or any other Vulkan-wrapping crate.** I am just accessing
 my own [vulkan_helper](https://github.com/dimi309/vulkan_helper) C library with 
@@ -49,8 +49,8 @@ Setup
 -----
 
 You need to execute `prepare-vulkan-helper.bat`on Windows or 
-`prepare-vulkan-helper.sh` on Linux and MacOS to build and set up the 
-vulkan_helper library before launching cargo. 
+`prepare-vulkan-helper.sh` on Linux to build and set up the vulkan_helper 
+library before launching cargo. 
 
 This repository contains the vulkan_helper repository as a submodule. Use 
 the `--recursive` flag when cloning, otherwise the vulkan_helper subdirectory 
