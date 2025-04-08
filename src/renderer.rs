@@ -130,7 +130,7 @@ impl Renderer {
 
         unsafe {
             let res = vh_create_instance_and_surface_linux(
-                self.nameStr.as_ptr(),
+                self.name_str.as_ptr(),
                 c as *mut xcb_connection_t,
                 w,
             );

@@ -22,7 +22,8 @@ I have called the project "Clunker".
 Prerequisites
 -------------
 
-- Rust
+- Rust (On both Windows and Linux I install it as suggested here:
+  https://www.rust-lang.org/learn/get-started)
 - A C compiler (Visual Studio on Windows, gcc / clang on others)
 - CMake
 - The [Vulkan SDK](https://vulkan.lunarg.com/) and the`VULKAN_SDK` environment 
@@ -33,6 +34,12 @@ Prerequisites
 On Ubuntu / Debian for example clang can be installed like this:
 
 	sudo apt-get install libclang-dev
+
+Some more libraries might need to be installed for Linux, for example
+for Ubuntu:
+
+    sudo apt-get install livbulkan-dev
+    sudo apt-get install libxcb-randr0-dev
 
 On Windows you can download a prebuilt binary from here for example:
 
